@@ -7,10 +7,13 @@
 
 Tiny and fast [Tar](<https://en.wikipedia.org/wiki/Tar_(computing)>) utils for any JavaScript runtime!
 
-- 🌳 Tiny (less than 2KB gzip) and tree-shakable
-- ✨ Written in modern TypeScript and ESM format
-- ✅ Works in any JavaScript runtime Node.js (18+), Bun, Deno, Browsers and Edge Workers
-- 🌐 Web Standard Compatible
+🌳 Tiny (less than 1.5KB minified + gzipped) and tree-shakable
+
+✨ Written with modern TypeScript and ESM format
+
+✅ Works in any JavaScript runtime Node.js (18+), Bun, Deno, Browsers, and Edge Workers
+
+🌐 Web Standard Compatible
 
 ## Installation
 
@@ -42,23 +45,23 @@ const { parseTar, createTar } = require("mircrotar");
 
 ## Creating a tar archive
 
-Easily create a new tar archive using `createTar` utility.
+Easily create a new tar archive using the `createTar` utility.
 
-First argument is an array of files to archive:
+The first argument is an array of files to archive:
 
-- `name` field is required and you can use `/` to specify files within sub directories.
+- `name` field is required and you can use `/` to specify files within sub-directories.
 - `data` field is optional for directories and can be either a [String](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/String), [`ArrayBuffer`](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/ArrayBuffer) or [`Uint8Array`](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Uint8Array).
 - `attrs` field is optional for file attributes.
 
-Second argument is for archive options. You can use `attrs` to set default attributes for all files (can be still overriden per file).
+The second argument is for archive options. You can use `attrs` to set default attributes for all files (can still be overridden per file).
 
 Possible attributes are:
 
-- `mtime`: Last modification time. Default is `Date.now()`
-- `uid`: Owner user id. Default is `1000`
-- `gid`: Owner group id. Default is `1000`
-- `user`: Owner user name. Default is `""`
-- `grouop`: Owner user group. Default is `""`
+- `mtime`: Last modification time. The default is `Date.now()`
+- `uid`: Owner user id. The default is `1000`
+- `gid`: Owner group id. The default is `1000`
+- `user`: Owner user name. The default is `""`
+- `group`: Owner user group. The default is `""`
 - `mode`: file mode (permissions). Default is `664` (`-rw-rw-r--`) for files and `775` (`-rwxrwxr-x`) for directories
 
 **Example:**
@@ -113,12 +116,12 @@ const files = parseTar(data);
  */
 ```
 
-Parsed files array has two additional properties `size` which is file size and `text` which is a lazy getter that decodes `data` view as string.
+Parsed files array has two additional properties: `size` file size and `text`, a lazy getter that decodes `data` view as a string.
 
 ## Development
 
 - Clone this repository
-- Install latest LTS version of [Node.js](https://nodejs.org/en/)
+- Install the latest LTS version of [Node.js](https://nodejs.org/en/)
 - Enable [Corepack](https://github.com/nodejs/corepack) using `corepack enable`
 - Install dependencies using `pnpm install`
 - Run interactive tests using `pnpm dev`
@@ -129,7 +132,7 @@ Made with 💛
 
 Inspired by [ankitrohatgi/tarballjs](https://github.com/ankitrohatgi/tarballjs)
 
-Published under [MIT License](./LICENSE).
+Published under the [MIT License](./LICENSE).
 
 <!-- Badges -->
 
