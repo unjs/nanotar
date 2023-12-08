@@ -9,7 +9,7 @@ export function parseTar(data: ArrayBuffer | Uint8Array): TarFileItem[] {
 
   while (offset < buffer.byteLength - 512) {
     // File name (offset: 0 - length: 100)
-    const name = _readString(buffer, offset, 100)
+    const name = _readString(buffer, offset, 100);
     if (name.length === 0) {
       break;
     }
@@ -31,7 +31,7 @@ export function parseTar(data: ArrayBuffer | Uint8Array): TarFileItem[] {
 
     // File type (offset: 156 - length: 1)
     const _type = _readNumber(buffer, offset + 156, 1);
-    const type = _type === 0 ? "file" : (_type === 5 ? "directory" : _type);
+    const type = _type === 0 ? "file" : _type === 5 ? "directory" : _type;
 
     // Ustar indicator (offset: 257 - length: 6)
     // Ignore
@@ -46,7 +46,7 @@ export function parseTar(data: ArrayBuffer | Uint8Array): TarFileItem[] {
     const group = _readString(buffer, offset + 297, 32);
 
     // File data (offset: 512 - length: size)
-    const data = new Uint8Array(buffer, offset + 512, size)
+    const data = new Uint8Array(buffer, offset + 512, size);
 
     files.push({
       name,

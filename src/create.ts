@@ -6,18 +6,18 @@ export interface CreateTarOptions {
 
 export function createTar(
   files: TarFileItem<string | Uint8Array | ArrayBuffer>[],
-  opts: CreateTarOptions = {}
+  opts: CreateTarOptions = {},
 ): Uint8Array {
   // Normalize file data in order to allow calculating final size
-  type NormalizedFile = TarFileItem<Uint8Array> & { size: number }
-  const _files: NormalizedFile[] = files.map(file => {
-    const data = _normalizeData(file.data)
+  type NormalizedFile = TarFileItem<Uint8Array> & { size: number };
+  const _files: NormalizedFile[] = files.map((file) => {
+    const data = _normalizeData(file.data);
     return {
       ...file,
       data,
       size: data?.length || 0,
-    }
-  })
+    };
+  });
 
   // Create data buffer
   let tarDataSize = 0;
@@ -37,14 +37,15 @@ export function createTar(
   let offset = 0;
 
   for (const file of _files) {
-    const isDir = !file.data
+    const isDir = !file.data;
 
     // -- Header --
     // File name (offset: 0 - length: 100)
-    _writeString(buffer, file.name, offset, 100)
+    _writeString(buffer, file.name, offset, 100);
 
     // File mode (offset: 100 - length: 8)
-    const mode = file.attrs?.mode ?? opts.attrs?.mode ?? (isDir ? "775" : "664");
+    const mode =
+      file.attrs?.mode ?? opts.attrs?.mode ?? (isDir ? "775" : "664");
     _writeString(buffer, _leftPad(mode, 7), offset + 100, 8);
 
     // File uid (offset: 108 - length: 8)
@@ -59,8 +60,13 @@ export function createTar(
     _writeString(buffer, _leftPad(file.size.toString(8), 11), offset + 124, 12);
 
     // File mtime (offset: 136 - length: 12)
-    const mtime = file.attrs?.mtime ?? opts.attrs?.mtime ?? Date.now()
-    _writeString(buffer, _leftPad(Math.trunc(mtime / 1000).toString(8), 11), offset + 136, 12);
+    const mtime = file.attrs?.mtime ?? opts.attrs?.mtime ?? Date.now();
+    _writeString(
+      buffer,
+      _leftPad(Math.trunc(mtime / 1000).toString(8), 11),
+      offset + 136,
+      12,
+    );
 
     // File type (offset: 156 - length: 1)
     const type = isDir ? "5" : "0";
@@ -70,7 +76,7 @@ export function createTar(
     _writeString(buffer, "ustar", offset + 257, 6 /* magic string */);
 
     // USTAR version (offset: 263 - length: 2)
-    _writeString(buffer, "00", offset + 263, 2 /* magic version */)
+    _writeString(buffer, "00", offset + 263, 2 /* magic version */);
 
     // File owner user (offset: 265 - length: 32)
     const user = file.attrs?.user ?? opts.attrs?.user ?? "";
@@ -78,7 +84,7 @@ export function createTar(
 
     // File owner group (offset: 297 - length: 32)
     const group = file.attrs?.group ?? opts.attrs?.group ?? "";
-    _writeString(buffer, group, offset + 297, 32)
+    _writeString(buffer, group, offset + 297, 32);
 
     // Checksum (offset: 148 - length: 8) -- must be last
     _writeString(buffer, "        ", offset + 148, 8);
@@ -103,10 +109,15 @@ export function createTar(
     offset += 512;
   }
 
-  return new Uint8Array(buffer)
+  return new Uint8Array(buffer);
 }
 
-function _writeString(buffer: ArrayBuffer, str: string, offset: number, size: number) {
+function _writeString(
+  buffer: ArrayBuffer,
+  str: string,
+  offset: number,
+  size: number,
+) {
   const strView = new Uint8Array(buffer, offset, size);
   const te = new TextEncoder();
   const written = te.encodeInto(str, strView).written;
@@ -119,7 +130,9 @@ function _leftPad(input: number | string, targetLength: number) {
   return String(input).padStart(targetLength, "0");
 }
 
-function _normalizeData(data: string | Uint8Array | ArrayBuffer | null | undefined) {
+function _normalizeData(
+  data: string | Uint8Array | ArrayBuffer | null | undefined,
+) {
   if (data === null || data === undefined) {
     return undefined;
   }

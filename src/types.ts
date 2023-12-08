@@ -2,18 +2,18 @@ export type TarFileItem<DataT = Uint8Array> = {
   /**
    * File name
    */
-  name: string,
+  name: string;
 
   /**
    * File data (don't provide for directories)
    */
-  data?: DataT,
+  data?: DataT;
 
   /**
    * File attributes
    */
-  attrs?: TarFileAttrs
-}
+  attrs?: TarFileAttrs;
+};
 
 export interface ParsedTarFileItem extends TarFileItem {
   type: "file" | "directory" | number;
