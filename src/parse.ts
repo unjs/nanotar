@@ -31,7 +31,7 @@ export function parseTar(data: ArrayBuffer | Uint8Array): TarFileItem[] {
 
     // File type (offset: 156 - length: 1)
     const _type = _readNumber(buffer, offset + 156, 1);
-    const type = _type === 0 ? "file" : _type === 5 ? "directory" : _type;
+    const type = _type === 0 ? "file" : (_type === 5 ? "directory" : _type); // prettier-ignore
 
     // Ustar indicator (offset: 257 - length: 6)
     // Ignore
