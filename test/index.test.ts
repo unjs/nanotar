@@ -1,6 +1,6 @@
 import { execSync } from "node:child_process";
 import { expect, it, describe } from "vitest";
-import { createTar, parseTar, TarFileItem } from "../src";
+import { createTarGzip, parseTarGzip, TarFileItem } from "../src";
 
 const mtime = 1_700_000_000_000;
 
@@ -11,8 +11,8 @@ const fixture: TarFileItem<any>[] = [
 ];
 
 describe("mircrotar", () => {
-  it("createTar", () => {
-    const data = createTar(fixture);
+  it("createTar", async () => {
+    const data = await createTarGzip(fixture);
     expect(data).toBeInstanceOf(Uint8Array);
     expect(execSync("tar -tvf-", { input: data }).toString())
       .toMatchInlineSnapshot(`
@@ -23,9 +23,12 @@ describe("mircrotar", () => {
     `);
   });
 
-  it("parseTar", () => {
-    const data = createTar(fixture);
-    const files = parseTar(data).map((f) => ({ ...f, data: "<hidden>" }));
+  it("parseTar", async () => {
+    const data = await createTarGzip(fixture);
+    const files = (await parseTarGzip(data)).map((f) => ({
+      ...f,
+      data: "<hidden>",
+    }));
     expect(files).toMatchInlineSnapshot(`
       [
         {

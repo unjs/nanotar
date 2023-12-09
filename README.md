@@ -7,13 +7,15 @@
 
 Tiny and fast [Tar](<https://en.wikipedia.org/wiki/Tar_(computing)>) utils for any JavaScript runtime!
 
-🌳 Tiny (less than 1.5KB minified + gzipped) and tree-shakable
+🌳 Tiny (less than 2KB minified + gzipped) and tree-shakable
 
 ✨ Written with modern TypeScript and ESM format
 
 ✅ Works in any JavaScript runtime Node.js (18+), Bun, Deno, Browsers, and Edge Workers
 
 🌐 Web Standard Compatible
+
+🗜️ Built-in compression and decompression support
 
 ## Installation
 
@@ -37,10 +39,16 @@ Import:
 
 ```js
 // ESM
-import { parseTar, createTar } from "mircrotar";
+import {
+  createTar,
+  createTarGzip,
+  createTarGzipStream,
+  parseTar,
+  parseTarGzip,
+} from "mircrotar";
 
 // CommonJS
-const { parseTar, createTar } = require("mircrotar");
+const { createTar } = require("mircrotar");
 ```
 
 ## Creating a tar archive
@@ -81,6 +89,18 @@ const data = createTar(
 // Data is a Uint8Array view you can send or write to a file
 ```
 
+### Compression
+
+You can optionaly use `createTarGzip` or `createTarGzipStream` to create a compressed tar data stream (returned value is a [`Promise<Uint8Array>`](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Uint8Array) or [`RedableStream`](https://developer.mozilla.org/en-US/docs/Web/API/ReadableStream) piped to [`CompressionStream`](https://developer.mozilla.org/en-US/docs/Web/API/CompressionStream))
+
+```js
+import { createTarGzip, createTarGzipStream } from "mircrotar";
+
+createTarGzip([]); // Promise<Uint8Array>
+
+createTarGzipStream([]); // RedableStream
+```
+
 ## Parsing a tar archive
 
 Easily parse a tar archive using `parseTar` utility.
@@ -117,6 +137,16 @@ const files = parseTar(data);
 ```
 
 Parsed files array has two additional properties: `size` file size and `text`, a lazy getter that decodes `data` view as a string.
+
+### Decompression
+
+If input is compressed, you can use `parseTarGzip` utility instead to parse it (it used [`DecompressionStream`](https://developer.mozilla.org/en-US/docs/Web/API/DecompressionStream) internally and return a `Promise<Uint8Array>` value)
+
+```js
+import { parseTarGzip } from "mircrotar";
+
+parseTarGzip(data); // Promise<Uint8Array>
+```
 
 ## Development
 

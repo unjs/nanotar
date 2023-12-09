@@ -4,8 +4,10 @@ export interface CreateTarOptions {
   attrs?: TarFileAttrs;
 }
 
+export type TarFileInput = TarFileItem<string | Uint8Array | ArrayBuffer>;
+
 export function createTar(
-  files: TarFileItem<string | Uint8Array | ArrayBuffer>[],
+  files: TarFileInput[],
   opts: CreateTarOptions = {},
 ): Uint8Array {
   // Normalize file data in order to allow calculating final size
@@ -110,6 +112,29 @@ export function createTar(
   }
 
   return new Uint8Array(buffer);
+}
+
+export function createTarGzipStream(
+  files: TarFileInput[],
+  opts: CreateTarOptions & { compression?: CompressionFormat } = {},
+): ReadableStream {
+  const buffer = createTar(files, opts);
+  return new ReadableStream({
+    start(controller) {
+      controller.enqueue(buffer);
+      controller.close();
+    },
+  }).pipeThrough(new CompressionStream(opts.compression ?? "gzip"));
+}
+
+export async function createTarGzip(
+  files: TarFileInput[],
+  opts: CreateTarOptions & { compression?: CompressionFormat } = {},
+): Promise<Uint8Array> {
+  const data = await new Response(createTarGzipStream(files, opts))
+    .arrayBuffer()
+    .then((buffer) => new Uint8Array(buffer));
+  return data;
 }
 
 function _writeString(

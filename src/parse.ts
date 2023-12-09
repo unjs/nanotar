@@ -75,6 +75,22 @@ export function parseTar(data: ArrayBuffer | Uint8Array): TarFileItem[] {
   return files;
 }
 
+export async function parseTarGzip(
+  data: ArrayBuffer | Uint8Array,
+  opts: { compression?: CompressionFormat } = {},
+): Promise<TarFileItem[]> {
+  const stream = new ReadableStream({
+    start(controller) {
+      controller.enqueue(new Uint8Array(data));
+      controller.close();
+    },
+  }).pipeThrough(new DecompressionStream(opts.compression ?? "gzip"));
+
+  const decompressedData = await new Response(stream).arrayBuffer();
+
+  return parseTar(decompressedData);
+}
+
 function _readString(buffer: ArrayBuffer, offset: number, size: number) {
   const view = new Uint8Array(buffer, offset, size);
   const i = view.indexOf(0);
