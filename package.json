@@ -1,6 +1,6 @@
 {
   "name": "mircrotar",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Tiny and fast Tar utils for any JavaScript runtime!",
   "repository": "unjs/mircrotar",
   "license": "MIT",
