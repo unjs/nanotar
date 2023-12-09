@@ -10,7 +10,7 @@ const fixture: TarFileItem<any>[] = [
   { name: "foo/bar.txt", data: "Hello World!", attrs: { mtime } },
 ];
 
-describe("mircrotar", () => {
+describe("nanotar", () => {
   it("createTar", async () => {
     const data = await createTarGzip(fixture);
     expect(data).toBeInstanceOf(Uint8Array);

@@ -1,8 +1,8 @@
 {
-  "name": "mircrotar",
+  "name": "nanotar",
   "version": "0.1.1",
   "description": "Tiny and fast Tar utils for any JavaScript runtime!",
-  "repository": "unjs/mircrotar",
+  "repository": "unjs/nanotar",
   "license": "MIT",
   "sideEffects": false,
   "type": "module",
