@@ -1,13 +1,14 @@
 # 📼 mircrotar
 
 [![npm version][npm-version-src]][npm-version-href]
-[![npm downloads][npm-downloads-src]][npm-downloads-href]
 [![bundle][bundle-src]][bundle-href]
-[![Codecov][codecov-src]][codecov-href]
 
-Tiny and fast [Tar](<https://en.wikipedia.org/wiki/Tar_(computing)>) utils for any JavaScript runtime!
+<!-- [![npm downloads][npm-downloads-src]][npm-downloads-href] -->
+<!-- [![Codecov][codecov-src]][codecov-href] -->
 
-🌳 Tiny (less than 2KB minified + gzipped) and tree-shakable
+Tiny and fast [tar](<https://en.wikipedia.org/wiki/Tar_(computing)>) utils for any JavaScript runtime!
+
+🌳 Tiny (~1KB minified + gzipped with all utils) and tree-shakable!
 
 ✨ Written with modern TypeScript and ESM format
 
