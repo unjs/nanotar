@@ -14,13 +14,14 @@ describe("nanotar", () => {
   it("createTar", async () => {
     const data = await createTarGzip(fixture);
     expect(data).toBeInstanceOf(Uint8Array);
-    expect(execSync("tar -ctvf-", { input: data }).toString())
+    const create = process.platform === "win32" ? "-tvf-" : "-ctvf-";
+    expect(execSync(`tar ${create}`, { input: data }).toString())
       .toMatchInlineSnapshot(`
-      "-rw-rw-r--  0 1000   1000       12 Nov 14 23:13 hello.txt
-      drwxrwxr-x  0 1001   1001        0 Nov 14 23:13 test
-      -rw-rw-r--  0 1000   1000       12 Nov 14 23:13 foo/bar.txt
-      "
-    `);
+        "-rw-rw-r--  0 1000   1000       12 nov. 14 23:13 hello.txt
+        drwxrwxr-x  0 1001   1001        0 nov. 14 23:13 test
+        -rw-rw-r--  0 1000   1000       12 nov. 14 23:13 foo/bar.txt
+        "
+      `);
   });
 
   it("parseTar", async () => {
