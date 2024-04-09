@@ -1,11 +1,23 @@
 import type { TarFileItem, TarFileAttrs } from "./types";
 
 export interface CreateTarOptions {
+  /**
+   * Default attributes applied to all files in the TAR unless overridden. See {@link TarFileAttrs}.
+   * @optional
+   */
   attrs?: TarFileAttrs;
 }
 
 export type TarFileInput = TarFileItem<string | Uint8Array | ArrayBuffer>;
 
+/**
+ * Creates a TAR file from a list of file inputs and options, returning the TAR file as a Uint8Array.
+ * This function takes care of normalising the file data, setting default attributes and calculating the TAR structure.
+ *
+ * @param {TarFileInput[]} files - An array of files to include in the TAR archive. Each file can contain different data types. See {@link TarFileInput}.
+ * @param {CreateTarOptions} opts - File creation configuration options, including default file attributes. See {@link CreateTarOptions}.
+ * @returns {Uint8Array} The TAR file encoded as an Uint8Array.
+ */
 export function createTar(
   files: TarFileInput[],
   opts: CreateTarOptions = {},
@@ -114,6 +126,14 @@ export function createTar(
   return new Uint8Array(buffer);
 }
 
+/**
+ * Creates a gzipped TAR file stream from an array of file inputs, using optional compression settings.
+ * This function is useful for streaming scenarios where the TAR file needs to be sent or processed directly.
+ *
+ * @param {TarFileInput[]} files - The files to include in the gzipped TAR archive. See {@link TarFileInput}.
+ * @param {CreateTarOptions & { Compression? CompressionFormat }} opts - Options for TAR creation and gzip compression. See {@link CreateTarOptions}.
+ * @returns {ReadableStream} A stream of the gzipped TAR file data.
+ */
 export function createTarGzipStream(
   files: TarFileInput[],
   opts: CreateTarOptions & { compression?: CompressionFormat } = {},
@@ -127,6 +147,14 @@ export function createTarGzipStream(
   }).pipeThrough(new CompressionStream(opts.compression ?? "gzip"));
 }
 
+/**
+ * Asynchronously creates a gzipped TAR file from an array of file inputs, using optional compression settings.
+ * This function is suitable for scenarios where a complete gzipped TAR file is required as a single Uint8 array.
+ *
+ * @param {TarFileInput[]} files - The files to include in the gzipped TAR archive.
+ * @param {CreateTarOptions & { Compression? CompressionFormat }} opts - Options for TAR creation and gzip compression.
+ * @returns {Promise<Uint8Array>} A promise that resolves to the gzipped TAR file as an Uint8Array.
+ */
 export async function createTarGzip(
   files: TarFileInput[],
   opts: CreateTarOptions & { compression?: CompressionFormat } = {},

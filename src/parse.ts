@@ -1,5 +1,11 @@
 import type { ParsedTarFileItem, TarFileItem } from "./types";
 
+/**
+ * Parses a TAR file from a binary buffer and returns an array of {@link TarFileItem} objects.
+ * 
+ * @param {ArrayBuffer | Uint8Array} data - The binary data of the TAR file.
+ * @returns {TarFileItem[]} An array of file items contained in the TAR file.
+ */
 export function parseTar(data: ArrayBuffer | Uint8Array): TarFileItem[] {
   const buffer = (data as Uint8Array).buffer || data;
 
@@ -75,6 +81,15 @@ export function parseTar(data: ArrayBuffer | Uint8Array): TarFileItem[] {
   return files;
 }
 
+/**
+ * Decompresses a gzipped TAR file and parses it to produce an array of file elements.
+ * This function handles the decompression of the gzip format before parsing the contents of the TAR.
+ * 
+ * @param {ArrayBuffer | Uint8Array} data - The binary data of the gzipped TAR file.
+ * @param {object} opts - Decompression options.
+ * @param {CompressionFormat} [opts.compression="gzip"] - Specifies the compression format to use, defaults to "gzip".
+ * @returns {Promise<TarFileItem[]>} A promise that resolves to an array of file items as described by {@link TarFileItem}.
+ */
 export async function parseTarGzip(
   data: ArrayBuffer | Uint8Array,
   opts: { compression?: CompressionFormat } = {},
