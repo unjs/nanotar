@@ -95,7 +95,7 @@ function _readString(buffer: ArrayBuffer, offset: number, size: number) {
   const view = new Uint8Array(buffer, offset, size);
   const i = view.indexOf(0);
   const td = new TextDecoder();
-  return td.decode(view.slice(0, i));
+  return td.decode(i >= 0 ? view.slice(0, i) : view);
 }
 
 function _readNumber(buffer: ArrayBuffer, offset: number, size: number) {
