@@ -1,6 +1,6 @@
 {
   "name": "nanotar",
-  "version": "0.1.1",
+  "version": "0.2.0",
   "description": "Tiny and fast Tar utils for any JavaScript runtime!",
   "repository": "unjs/nanotar",
   "license": "MIT",
