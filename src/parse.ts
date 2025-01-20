@@ -1,6 +1,6 @@
-import type { ParsedTarFileItem, TarFileItem } from "./types";
+import type { ParsedTarFileItem } from "./types";
 
-export function parseTar(data: ArrayBuffer | Uint8Array): TarFileItem[] {
+export function parseTar(data: ArrayBuffer | Uint8Array): ParsedTarFileItem[] {
   const buffer = (data as Uint8Array).buffer || data;
 
   const files: ParsedTarFileItem[] = [];
@@ -78,7 +78,7 @@ export function parseTar(data: ArrayBuffer | Uint8Array): TarFileItem[] {
 export async function parseTarGzip(
   data: ArrayBuffer | Uint8Array,
   opts: { compression?: CompressionFormat } = {},
-): Promise<TarFileItem[]> {
+): Promise<ParsedTarFileItem[]> {
   const stream = new ReadableStream({
     start(controller) {
       controller.enqueue(new Uint8Array(data));
