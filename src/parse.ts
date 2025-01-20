@@ -15,7 +15,7 @@ export function parseTar(data: ArrayBuffer | Uint8Array): ParsedTarFileItem[] {
     }
 
     // File mode (offset: 100 - length: 8)
-    const mode = _readString(buffer, offset + 100, 8);
+    const mode = _readString(buffer, offset + 100, 8).trim();
 
     // File uid (offset: 108 - length: 8)
     const uid = Number.parseInt(_readString(buffer, offset + 108, 8));
