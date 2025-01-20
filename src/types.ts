@@ -6,7 +6,7 @@ export type TarFileItem<DataT = Uint8Array> = {
 
   /**
    * The data associated with the file. This field is usually omitted for directories.
-   * optional
+   * @optional
    */
   data?: DataT;
 
@@ -19,7 +19,7 @@ export type TarFileItem<DataT = Uint8Array> = {
 
 export interface ParsedTarFileItem extends TarFileItem {
   /**
-   * The type of file system element. It can be 'file', 'directory' or an operating system specific numeric code.
+   * The type of file system element. It can be `"file"`, `"directory"` or an operating system specific numeric code.
    */
   type: "file" | "directory" | number;
 
@@ -35,9 +35,8 @@ export interface ParsedTarFileItem extends TarFileItem {
 }
 
 export interface TarFileAttrs {
-   /**
-   * The file mode as a string (e.g. '-rw-rw-r--' for files and '-rwxrwxr-x' for directories).
-   * @default "664" for files, "775" for directories
+  /**
+   * File mode in octal (e.g., `664`) represents read, write, and execute permissions for the owner, group, and others.
    */
   mode?: string;
 
