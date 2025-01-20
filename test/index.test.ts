@@ -1,5 +1,6 @@
 import { execSync } from "node:child_process";
 import { expect, it, describe } from "vitest";
+import { inspect } from "node:util";
 import { createTarGzip, parseTarGzip, TarFileItem } from "../src";
 
 const mtime = 1_700_000_000_000;
@@ -39,7 +40,7 @@ describe("nanotar", () => {
     const data = await createTarGzip(fixture);
     const files = (await parseTarGzip(data)).map((f) => ({
       ...f,
-      data: "<hidden>",
+      data: f.data ? inspect(f.data).replace(/\s+/g, " ") : undefined,
     }));
     expect(files).toMatchInlineSnapshot(`
       [
@@ -52,7 +53,7 @@ describe("nanotar", () => {
             "uid": 1750,
             "user": "",
           },
-          "data": "<hidden>",
+          "data": "Uint8Array(12) [ 72, 101, 108, 108, 111, 32, 87, 111, 114, 108, 100, 33 ]",
           "name": "hello.txt",
           "size": 12,
           "text": "Hello World!",
@@ -67,7 +68,7 @@ describe("nanotar", () => {
             "uid": 1751,
             "user": "",
           },
-          "data": "<hidden>",
+          "data": "Uint8Array(0) []",
           "name": "test",
           "size": 0,
           "text": "",
@@ -82,7 +83,7 @@ describe("nanotar", () => {
             "uid": 1750,
             "user": "",
           },
-          "data": "<hidden>",
+          "data": "Uint8Array(12) [ 72, 101, 108, 108, 111, 32, 87, 111, 114, 108, 100, 33 ]",
           "name": "foo/bar.txt",
           "size": 12,
           "text": "Hello World!",
