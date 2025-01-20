@@ -68,7 +68,7 @@ describe("nanotar", () => {
             "uid": 1751,
             "user": "",
           },
-          "data": "Uint8Array(0) []",
+          "data": undefined,
           "name": "test",
           "size": 0,
           "text": "",

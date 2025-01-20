@@ -1,5 +1,8 @@
 import type { ParsedTarFileItem } from "./types";
 
+const TAR_TYPE_FILE = 0;
+const TAR_TYPE_DIR = 5;
+
 /**
  * Parses a TAR file from a binary buffer and returns an array of {@link TarFileItem} objects.
  *
@@ -37,7 +40,7 @@ export function parseTar(data: ArrayBuffer | Uint8Array): ParsedTarFileItem[] {
 
     // File type (offset: 156 - length: 1)
     const _type = _readNumber(buffer, offset + 156, 1);
-    const type = _type === 0 ? "file" : (_type === 5 ? "directory" : _type); // prettier-ignore
+    const type = _type === TAR_TYPE_FILE ? "file" : (_type === TAR_TYPE_DIR ? "directory" : _type); // prettier-ignore
 
     // Ustar indicator (offset: 257 - length: 6)
     // Ignore
@@ -52,7 +55,10 @@ export function parseTar(data: ArrayBuffer | Uint8Array): ParsedTarFileItem[] {
     const group = _readString(buffer, offset + 297, 32);
 
     // File data (offset: 512 - length: size)
-    const data = new Uint8Array(buffer, offset + 512, size);
+    const data =
+      _type === TAR_TYPE_DIR
+        ? undefined
+        : new Uint8Array(buffer, offset + 512, size);
 
     files.push({
       name,
