@@ -91,14 +91,14 @@ export async function parseTarGzip(
   return parseTar(decompressedData);
 }
 
-function _readString(buffer: ArrayBuffer, offset: number, size: number) {
+function _readString(buffer: ArrayBufferLike, offset: number, size: number) {
   const view = new Uint8Array(buffer, offset, size);
   const i = view.indexOf(0);
   const td = new TextDecoder();
   return td.decode(view.slice(0, i));
 }
 
-function _readNumber(buffer: ArrayBuffer, offset: number, size: number) {
+function _readNumber(buffer: ArrayBufferLike, offset: number, size: number) {
   const view = new Uint8Array(buffer, offset, size);
   let str = "";
   for (let i = 0; i < size; i++) {
