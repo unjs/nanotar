@@ -1,12 +1,12 @@
-import type { ParsedTarFileItem, TarFileItem } from "./types";
+import type { ParsedTarFileItem } from "./types";
 
 /**
  * Parses a TAR file from a binary buffer and returns an array of {@link TarFileItem} objects.
  *
  * @param {ArrayBuffer | Uint8Array} data - The binary data of the TAR file.
- * @returns {TarFileItem[]} An array of file items contained in the TAR file.
+ * @returns {ParsedTarFileItem[]} An array of file items contained in the TAR file.
  */
-export function parseTar(data: ArrayBuffer | Uint8Array): TarFileItem[] {
+export function parseTar(data: ArrayBuffer | Uint8Array): ParsedTarFileItem[] {
   const buffer = (data as Uint8Array).buffer || data;
 
   const files: ParsedTarFileItem[] = [];
@@ -21,7 +21,7 @@ export function parseTar(data: ArrayBuffer | Uint8Array): TarFileItem[] {
     }
 
     // File mode (offset: 100 - length: 8)
-    const mode = _readString(buffer, offset + 100, 8);
+    const mode = _readString(buffer, offset + 100, 8).trim();
 
     // File uid (offset: 108 - length: 8)
     const uid = Number.parseInt(_readString(buffer, offset + 108, 8));
@@ -93,7 +93,7 @@ export function parseTar(data: ArrayBuffer | Uint8Array): TarFileItem[] {
 export async function parseTarGzip(
   data: ArrayBuffer | Uint8Array,
   opts: { compression?: CompressionFormat } = {},
-): Promise<TarFileItem[]> {
+): Promise<ParsedTarFileItem[]> {
   const stream = new ReadableStream({
     start(controller) {
       controller.enqueue(new Uint8Array(data));
@@ -106,14 +106,14 @@ export async function parseTarGzip(
   return parseTar(decompressedData);
 }
 
-function _readString(buffer: ArrayBuffer, offset: number, size: number) {
+function _readString(buffer: ArrayBufferLike, offset: number, size: number) {
   const view = new Uint8Array(buffer, offset, size);
   const i = view.indexOf(0);
   const td = new TextDecoder();
-  return td.decode(view.slice(0, i));
+  return td.decode(i === -1 ? view : view.slice(0, i));
 }
 
-function _readNumber(buffer: ArrayBuffer, offset: number, size: number) {
+function _readNumber(buffer: ArrayBufferLike, offset: number, size: number) {
   const view = new Uint8Array(buffer, offset, size);
   let str = "";
   for (let i = 0; i < size; i++) {
