@@ -8,6 +8,11 @@ export interface ParseTarOptions {
    * A filter function that determines whether a file entry should be skipped or not.
    */
   filter?: (file: ParsedTarFileItemMeta) => boolean;
+
+  /**
+   * If `true`, only the metadata of the files will be parsed, and the file data will be omitted for listing purposes.
+   */
+  metaOnly?: boolean;
 }
 
 /**
@@ -16,15 +21,16 @@ export interface ParseTarOptions {
  * @param {ArrayBuffer | Uint8Array} data - The binary data of the TAR file.
  * @returns {ParsedTarFileItem[]} An array of file items contained in the TAR file.
  */
-export function parseTar(
-  data: ArrayBuffer | Uint8Array,
-  opts?: ParseTarOptions,
-): ParsedTarFileItem[] {
+export function parseTar<
+  _ = never,
+  _Opts extends ParseTarOptions = ParseTarOptions,
+  // prettier-ignore
+  _ItemType extends ParsedTarFileItem | ParsedTarFileItemMeta =
+     _Opts["metaOnly"] extends true ? ParsedTarFileItemMeta : ParsedTarFileItem,
+>(data: ArrayBuffer | Uint8Array, opts?: _Opts): _ItemType[] {
   const buffer = (data as Uint8Array).buffer || data;
 
-  const files: ParsedTarFileItem[] = [];
-
-  const filter = opts?.filter;
+  const files: _ItemType[] = [];
 
   let offset = 0;
 
@@ -85,7 +91,14 @@ export function parseTar(
     };
 
     // Filter
-    if (filter && !filter(meta)) {
+    if (opts?.filter && !opts.filter(meta)) {
+      offset += seek;
+      continue;
+    }
+
+    // Meta-only mode
+    if (opts?.metaOnly) {
+      files.push(meta as _ItemType);
       offset += seek;
       continue;
     }
@@ -102,7 +115,7 @@ export function parseTar(
       get text() {
         return new TextDecoder().decode(this.data);
       },
-    });
+    } satisfies ParsedTarFileItem as _ItemType);
 
     offset += seek;
   }

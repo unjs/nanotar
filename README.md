@@ -99,7 +99,7 @@ import { createTarGzip, createTarGzipStream } from "nanotar";
 
 createTarGzip([]); // Promise<Uint8Array>
 
-createTarGzipStream([]); // RedableStream
+createTarGzipStream([]); // ReadableStream
 ```
 
 ## Parsing a tar archive
@@ -144,6 +144,14 @@ You can filter iterms to read using `filter` option:
 ```ts
 const files = parseTar(data, {
   filter: (file) => file.name.starsWith("dir/"),
+});
+```
+
+Additionally, you can use `metaOnly` option to skip reading file data and listing purposes:
+
+```ts
+const fileMetas = parseTar(data, {
+  metaOnly: true,
 });
 ```
 
