@@ -14,14 +14,25 @@ describe("nanotar", () => {
   it("createTar", async () => {
     const data = await createTarGzip(fixture);
     expect(data).toBeInstanceOf(Uint8Array);
-    // Remove 12 Nov 14 pattern
-    expect(execSync("tar -tzvf-", { input: data }).toString())
-      .toMatchInlineSnapshot(`
-        "-rw-rw-r--  0 1000   1000       12 Nov 15  2023 hello.txt
-        drwxrwxr-x  0 1001   1001        0 Nov 15  2023 test
-        -rw-rw-r--  0 1000   1000       12 Nov 15  2023 foo/bar.txt
-        "
-      `);
+
+    const out = execSync("tar -tzvf-", { input: data })
+      .toString()
+      .split("\n")
+      .map((l) => {
+        // other columns might be insconsistent between platforms
+        const parts = l.trim().split(/\s+/);
+        const mod = parts[0];
+        const name = parts.at(-1);
+        return `${mod} ${name}`;
+      })
+      .join("\n");
+
+    expect(out).toMatchInlineSnapshot(`
+      "-rw-rw-r-- hello.txt
+      drwxrwxr-x test
+      -rw-rw-r-- foo/bar.txt
+       "
+    `);
   });
 
   it("parseTar", async () => {
