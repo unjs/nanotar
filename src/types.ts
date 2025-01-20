@@ -34,6 +34,8 @@ export interface ParsedTarFileItem extends TarFileItem {
   readonly text: string;
 }
 
+export type ParsedTarFileItemMeta = Omit<ParsedTarFileItem, "data" | "text">;
+
 export interface TarFileAttrs {
   /**
    * File mode in octal (e.g., `664`) represents read, write, and execute permissions for the owner, group, and others.

@@ -92,4 +92,17 @@ describe("nanotar", () => {
       ]
     `);
   });
+
+  it("parseTar (with filter)", async () => {
+    const data = await createTarGzip(fixture);
+    const files = (
+      await parseTarGzip(data, {
+        filter: (file) => file.name.startsWith("foo/"),
+      })
+    ).map((f) => ({
+      ...f,
+      data: f.data ? inspect(f.data).replace(/\s+/g, " ") : undefined,
+    }));
+    expect(files.map((f) => f.name)).toMatchObject(["foo/bar.txt"]);
+  });
 });

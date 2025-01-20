@@ -1,7 +1,14 @@
-import type { ParsedTarFileItem } from "./types";
+import type { ParsedTarFileItem, ParsedTarFileItemMeta } from "./types";
 
 const TAR_TYPE_FILE = 0;
 const TAR_TYPE_DIR = 5;
+
+export interface ParseTarOptions {
+  /**
+   * A filter function that determines whether a file entry should be skipped or not.
+   */
+  filter?: (file: ParsedTarFileItemMeta) => boolean;
+}
 
 /**
  * Parses a TAR file from a binary buffer and returns an array of {@link TarFileItem} objects.
@@ -9,10 +16,15 @@ const TAR_TYPE_DIR = 5;
  * @param {ArrayBuffer | Uint8Array} data - The binary data of the TAR file.
  * @returns {ParsedTarFileItem[]} An array of file items contained in the TAR file.
  */
-export function parseTar(data: ArrayBuffer | Uint8Array): ParsedTarFileItem[] {
+export function parseTar(
+  data: ArrayBuffer | Uint8Array,
+  opts?: ParseTarOptions,
+): ParsedTarFileItem[] {
   const buffer = (data as Uint8Array).buffer || data;
 
   const files: ParsedTarFileItem[] = [];
+
+  const filter = opts?.filter;
 
   let offset = 0;
 
@@ -35,6 +47,9 @@ export function parseTar(data: ArrayBuffer | Uint8Array): ParsedTarFileItem[] {
     // File size (offset: 124 - length: 12)
     const size = _readNumber(buffer, offset + 124, 12);
 
+    // Calculate next seek offset based on size
+    const seek = 512 + 512 * Math.trunc(size / 512) + (size % 512 ? 512 : 0);
+
     // File mtime (offset: 136 - length: 12)
     const mtime = _readNumber(buffer, offset + 136, 12);
 
@@ -54,20 +69,11 @@ export function parseTar(data: ArrayBuffer | Uint8Array): ParsedTarFileItem[] {
     // File owner group (offset: 297 - length: 32)
     const group = _readString(buffer, offset + 297, 32);
 
-    // File data (offset: 512 - length: size)
-    const data =
-      _type === TAR_TYPE_DIR
-        ? undefined
-        : new Uint8Array(buffer, offset + 512, size);
-
-    files.push({
+    // Group all file metadata
+    const meta: ParsedTarFileItemMeta = {
       name,
       type,
       size,
-      data,
-      get text() {
-        return new TextDecoder().decode(this.data);
-      },
       attrs: {
         mode,
         uid,
@@ -76,12 +82,29 @@ export function parseTar(data: ArrayBuffer | Uint8Array): ParsedTarFileItem[] {
         user,
         group,
       },
+    };
+
+    // Filter
+    if (filter && !filter(meta)) {
+      offset += seek;
+      continue;
+    }
+
+    // File data (offset: 512 - length: size)
+    const data =
+      _type === TAR_TYPE_DIR
+        ? undefined
+        : new Uint8Array(buffer, offset + 512, size);
+
+    files.push({
+      ...meta,
+      data,
+      get text() {
+        return new TextDecoder().decode(this.data);
+      },
     });
 
-    offset += 512 + 512 * Math.trunc(size / 512);
-    if (size % 512) {
-      offset += 512;
-    }
+    offset += seek;
   }
 
   return files;
@@ -98,7 +121,7 @@ export function parseTar(data: ArrayBuffer | Uint8Array): ParsedTarFileItem[] {
  */
 export async function parseTarGzip(
   data: ArrayBuffer | Uint8Array,
-  opts: { compression?: CompressionFormat } = {},
+  opts: ParseTarOptions & { compression?: CompressionFormat } = {},
 ): Promise<ParsedTarFileItem[]> {
   const stream = new ReadableStream({
     start(controller) {
@@ -109,7 +132,7 @@ export async function parseTarGzip(
 
   const decompressedData = await new Response(stream).arrayBuffer();
 
-  return parseTar(decompressedData);
+  return parseTar(decompressedData, opts);
 }
 
 function _readString(buffer: ArrayBufferLike, offset: number, size: number) {

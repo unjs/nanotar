@@ -92,7 +92,7 @@ const data = createTar(
 
 ### Compression
 
-You can optionaly use `createTarGzip` or `createTarGzipStream` to create a compressed tar data stream (returned value is a [`Promise<Uint8Array>`](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Uint8Array) or [`RedableStream`](https://developer.mozilla.org/en-US/docs/Web/API/ReadableStream) piped to [`CompressionStream`](https://developer.mozilla.org/en-US/docs/Web/API/CompressionStream))
+You can optionally use `createTarGzip` or `createTarGzipStream` to create a compressed tar data stream (returned value is a [`Promise<Uint8Array>`](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Uint8Array) or [`ReadableStream`](https://developer.mozilla.org/en-US/docs/Web/API/ReadableStream) piped to [`CompressionStream`](https://developer.mozilla.org/en-US/docs/Web/API/CompressionStream))
 
 ```js
 import { createTarGzip, createTarGzipStream } from "nanotar";
@@ -138,6 +138,14 @@ const files = parseTar(data);
 ```
 
 Parsed files array has two additional properties: `size` file size and `text`, a lazy getter that decodes `data` view as a string.
+
+You can filter iterms to read using `filter` option:
+
+```ts
+const files = parseTar(data, {
+  filter: (file) => file.name.starsWith("dir/"),
+});
+```
 
 ### Decompression
 
