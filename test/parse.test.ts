@@ -91,13 +91,23 @@ describe("parse", () => {
           new URL(`fixtures/out/${format}.tar`, import.meta.url),
         );
         const parsed = await parseTar(blob);
-        const names = parsed.map((f) => f.name);
-        expect(names).toMatchObject([
-          "./",
-          "./foo.txt",
-          "./bar/",
-          "./bar/baz.txt",
-        ]);
+
+        const expectedFiles = ["./foo.txt", "./bar/baz.txt"];
+
+        // Long filenames
+        if (!["v7", "ustar"].includes(format)) {
+          expectedFiles.push(
+            `./long/[160]#${"-".repeat(153)}#/file.txt`,
+            `./long/[160]#${"-".repeat(153)}#/link`,
+          );
+        }
+
+        expect(
+          parsed
+            .filter((i) => i.type !== "directory")
+            .map((i) => i.name)
+            .sort(),
+        ).toMatchObject(expectedFiles.sort());
       });
     }
   });

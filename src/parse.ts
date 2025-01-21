@@ -37,9 +37,17 @@ export function parseTar<
 
   while (offset < buffer.byteLength - 512) {
     // File name (offset: 0 - length: 100)
-    const name = _readString(buffer, offset, 100);
+    let name = _readString(buffer, offset, 100);
     if (name.length === 0) {
       break;
+    }
+
+    // Long file-name handling
+    if (nextExtendedHeader) {
+      const longName = nextExtendedHeader.path || nextExtendedHeader.linkpath;
+      if (longName) {
+        name = longName;
+      }
     }
 
     // File mode (offset: 100 - length: 8)
@@ -62,25 +70,38 @@ export function parseTar<
 
     // File type (offset: 156 - length: 1)
     // prettier-ignore
-    const _type = _readString(buffer, offset + 156, 1) as keyof typeof tarItemTypeMap;
-    const type = tarItemTypeMap[_type];
+    const _type = (_readString(buffer, offset + 156, 1) || "0") as keyof typeof tarItemTypeMap;
+    const type = tarItemTypeMap[_type] || _type;
 
-    // Extended headers
-    if (type === "extendedHeader" || type === "globalExtendedHeader") {
-      const headers = _parseExtendedHeaders(
-        new Uint8Array(buffer, offset + 512, size),
-      );
-      if (type === "extendedHeader") {
-        nextExtendedHeader = headers;
-      } else {
-        nextExtendedHeader = undefined;
-        globalExtendedHeader = {
-          ...globalExtendedHeader,
-          ...headers,
-        };
+    // Special types
+    switch (type) {
+      // Extended headers for next entry
+      case "extendedHeader" /* x */:
+      case "globalExtendedHeader" /* g */: {
+        const headers = _parseExtendedHeaders(
+          new Uint8Array(buffer, offset + 512, size),
+        );
+        if (type === "extendedHeader") {
+          nextExtendedHeader = headers;
+        } else {
+          nextExtendedHeader = undefined;
+          globalExtendedHeader = {
+            ...globalExtendedHeader,
+            ...headers,
+          };
+        }
+        offset += seek;
+        continue;
       }
-      offset += seek;
-      continue;
+      // GNU tar long file names
+      case "gnuLongFileName" /* L */:
+      case "gnuOldLongFileName" /* N */:
+      case "gnuLongLinkName" /* K */: {
+        nextExtendedHeader = { path: _readString(buffer, offset + 512, size) };
+        offset += seek;
+        continue;
+      }
+      // No default
     }
 
     // Ustar indicator (offset: 257 - length: 6)
