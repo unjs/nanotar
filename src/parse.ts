@@ -42,9 +42,12 @@ export function parseTar<
       break;
     }
 
-    // Inherit extended name
-    if (nextExtendedHeader?.path) {
-      name = nextExtendedHeader.path;
+    // Long file-name handling
+    if (nextExtendedHeader) {
+      const longName = nextExtendedHeader.path || nextExtendedHeader.linkpath;
+      if (longName) {
+        name = longName;
+      }
     }
 
     // File mode (offset: 100 - length: 8)
