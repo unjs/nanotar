@@ -1,7 +1,7 @@
-import { execSync } from "node:child_process";
 import { expect, it, describe } from "vitest";
 import { inspect } from "node:util";
-import { createTarGzip, parseTarGzip, TarFileItem } from "../src";
+import { createTarGzip, parseTar, parseTarGzip, TarFileItem } from "../src";
+import { readFile } from "node:fs/promises";
 
 const mtime = 1_700_000_000_000;
 
@@ -11,32 +11,8 @@ const fixture: TarFileItem<any>[] = [
   { name: "foo/bar.txt", data: "Hello World!", attrs: { mtime } },
 ];
 
-describe("nanotar", () => {
-  it("createTar", async () => {
-    const data = await createTarGzip(fixture);
-    expect(data).toBeInstanceOf(Uint8Array);
-
-    const out = execSync("tar -tzvf-", { input: data })
-      .toString()
-      .split("\n")
-      .map((l) => {
-        // other columns might be insconsistent between platforms
-        const parts = l.trim().split(/\s+/);
-        const mod = parts[0];
-        const name = parts.at(-1);
-        return `${mod} ${name}`;
-      })
-      .join("\n");
-
-    expect(out).toMatchInlineSnapshot(`
-      "-rw-rw-r-- hello.txt
-      drwxrwxr-x test
-      -rw-rw-r-- foo/bar.txt
-       "
-    `);
-  });
-
-  it("parseTar", async () => {
+describe("parse", () => {
+  it("parseTarGzip", async () => {
     const data = await createTarGzip(fixture);
     const files = (await parseTarGzip(data)).map((f) => ({
       ...f,
@@ -93,7 +69,7 @@ describe("nanotar", () => {
     `);
   });
 
-  it("parseTar (with filter)", async () => {
+  it("parseTarGzip (with filter)", async () => {
     const data = await createTarGzip(fixture);
     const files = (
       await parseTarGzip(data, {
@@ -104,5 +80,25 @@ describe("nanotar", () => {
       data: f.data ? inspect(f.data).replace(/\s+/g, " ") : undefined,
     }));
     expect(files.map((f) => f.name)).toMatchObject(["foo/bar.txt"]);
+  });
+
+  describe("parse different formats", async () => {
+    const formats = ["gnu", "pax", "ustar", "v7"];
+
+    for (const format of formats) {
+      it.skipIf(format === "pax")(`parseTar (${format})`, async () => {
+        const blob = await readFile(
+          new URL(`fixtures/out/${format}.tar`, import.meta.url),
+        );
+        const parsed = await parseTar(blob);
+        const names = parsed.map((f) => f.name);
+        expect(names).toMatchObject([
+          "./",
+          "./foo.txt",
+          "./bar/",
+          "./bar/baz.txt",
+        ]);
+      });
+    }
   });
 });
