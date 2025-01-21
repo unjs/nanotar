@@ -76,8 +76,8 @@ export function parseTar<
     // Special types
     switch (type) {
       // Extended headers for next entry
-      case "extendedHeader":
-      case "globalExtendedHeader": {
+      case "extendedHeader" /* x */:
+      case "globalExtendedHeader" /* g */: {
         const headers = _parseExtendedHeaders(
           new Uint8Array(buffer, offset + 512, size),
         );
@@ -94,9 +94,9 @@ export function parseTar<
         continue;
       }
       // GNU tar long file names
-      case "gnuLongFileName":
-      case "gnuOldLongFileName":
-      case "gnuLongLinkName": {
+      case "gnuLongFileName" /* L */:
+      case "gnuOldLongFileName" /* N */:
+      case "gnuLongLinkName" /* K */: {
         nextExtendedHeader = { path: _readString(buffer, offset + 512, size) };
         offset += seek;
         continue;
