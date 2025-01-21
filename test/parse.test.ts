@@ -86,7 +86,7 @@ describe("parse", () => {
     const formats = ["gnu", "pax", "ustar", "v7"];
 
     for (const format of formats) {
-      it.skipIf(format === "pax")(`parseTar (${format})`, async () => {
+      it(`parseTar (${format})`, async () => {
         const blob = await readFile(
           new URL(`fixtures/out/${format}.tar`, import.meta.url),
         );

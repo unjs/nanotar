@@ -1,7 +1,5 @@
 import type { ParsedTarFileItem, ParsedTarFileItemMeta } from "./types";
-
-const TAR_TYPE_FILE = 0;
-const TAR_TYPE_DIR = 5;
+import { tarItemTypeMap } from "./item-types";
 
 export interface ParseTarOptions {
   /**
@@ -34,6 +32,9 @@ export function parseTar<
 
   let offset = 0;
 
+  let nextExtendedHeader: undefined | Record<string, string | undefined>;
+  let globalExtendedHeader: undefined | Record<string, string | undefined>;
+
   while (offset < buffer.byteLength - 512) {
     // File name (offset: 0 - length: 100)
     const name = _readString(buffer, offset, 100);
@@ -60,8 +61,27 @@ export function parseTar<
     const mtime = _readNumber(buffer, offset + 136, 12);
 
     // File type (offset: 156 - length: 1)
-    const _type = _readNumber(buffer, offset + 156, 1);
-    const type = _type === TAR_TYPE_FILE ? "file" : (_type === TAR_TYPE_DIR ? "directory" : _type); // prettier-ignore
+    // prettier-ignore
+    const _type = _readString(buffer, offset + 156, 1) as keyof typeof tarItemTypeMap;
+    const type = tarItemTypeMap[_type];
+
+    // Extended headers
+    if (type === "extendedHeader" || type === "globalExtendedHeader") {
+      const headers = _parseExtendedHeaders(
+        new Uint8Array(buffer, offset + 512, size),
+      );
+      if (type === "extendedHeader") {
+        nextExtendedHeader = headers;
+      } else {
+        nextExtendedHeader = undefined;
+        globalExtendedHeader = {
+          ...globalExtendedHeader,
+          ...headers,
+        };
+      }
+      offset += seek;
+      continue;
+    }
 
     // Ustar indicator (offset: 257 - length: 6)
     // Ignore
@@ -81,6 +101,8 @@ export function parseTar<
       type,
       size,
       attrs: {
+        ...globalExtendedHeader,
+        ...nextExtendedHeader,
         mode,
         uid,
         gid,
@@ -89,6 +111,9 @@ export function parseTar<
         group,
       },
     };
+
+    // Reset next extended header
+    nextExtendedHeader = undefined;
 
     // Filter
     if (opts?.filter && !opts.filter(meta)) {
@@ -103,11 +128,9 @@ export function parseTar<
       continue;
     }
 
-    // File data (offset: 512 - length: size)
+    // Data (offset: 512 - length: size)
     const data =
-      _type === TAR_TYPE_DIR
-        ? undefined
-        : new Uint8Array(buffer, offset + 512, size);
+      size === 0 ? undefined : new Uint8Array(buffer, offset + 512, size);
 
     files.push({
       ...meta,
@@ -162,4 +185,17 @@ function _readNumber(buffer: ArrayBufferLike, offset: number, size: number) {
     str += String.fromCodePoint(view[i]);
   }
   return Number.parseInt(str, 8);
+}
+
+function _parseExtendedHeaders(data: Uint8Array) {
+  // TODO: Improve performance by using byte offset reads
+  const dataStr = new TextDecoder().decode(data);
+  const headers: Record<string, string | undefined> = {};
+  for (const line of dataStr.split("\n")) {
+    const s = line.split(" ")[1]?.split("=");
+    if (s) {
+      headers[s[0]] = s[1];
+    }
+  }
+  return headers;
 }
