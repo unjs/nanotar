@@ -28,7 +28,7 @@ export const tarItemTypeMap = {
   "N": "gnuOldLongFileName",       // GNU long file name (old)
   "M": "gnuMultiVolume",           // Multi-volume archive entry
   "S": "gnuSparseFile",            // Sparse file (for files with holes)
-  "E": "gnuExtendedSparse",         // Extended sparse file (used in GNU tar for large sparse files)
+  "E": "gnuExtendedSparse",        // Extended sparse file (used in GNU tar for large sparse files)
 
   // Solaris tar
   "A": "solarisAcl",               // Solaris access control list
