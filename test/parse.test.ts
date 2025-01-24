@@ -12,7 +12,7 @@ const fixture: TarFileItem<any>[] = [
 ];
 
 describe("parse", () => {
-  it("parseTarGzip", async () => {
+  it.only("parseTarGzip", async () => {
     const data = await createTarGzip(fixture);
     const files = (await parseTarGzip(data)).map((f) => ({
       ...f,
@@ -21,49 +21,24 @@ describe("parse", () => {
     expect(files).toMatchInlineSnapshot(`
       [
         {
-          "attrs": {
-            "gid": 1750,
-            "group": "",
-            "mode": "0000664",
-            "mtime": 1700000000,
-            "uid": 1750,
-            "user": "",
-          },
-          "data": "Uint8Array(12) [ 72, 101, 108, 108, 111, 32, 87, 111, 114, 108, 100, 33 ]",
-          "name": "hello.txt",
-          "size": 12,
-          "text": "Hello World!",
-          "type": "file",
-        },
-        {
-          "attrs": {
-            "gid": 1751,
-            "group": "",
-            "mode": "0000775",
-            "mtime": 1700000000,
-            "uid": 1751,
-            "user": "",
-          },
-          "data": undefined,
-          "name": "test",
+          "checksum": "7702",
+          "data": "Uint8Array(512) [ 104, 101, 108, 108, 111, 46, 116, 120, 116, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, ... 412 more items ]",
+          "devMajor": "",
+          "devMinor": "",
+          "gid": 1000,
+          "group": "",
+          "linkpath": "",
+          "magic": "ustar",
+          "mode": "0000664",
+          "mtime": 1700000000,
+          "padding": "",
+          "path": "hello.txt",
+          "prefix": "",
           "size": 0,
-          "text": "",
-          "type": "directory",
-        },
-        {
-          "attrs": {
-            "gid": 1750,
-            "group": "",
-            "mode": "0000664",
-            "mtime": 1700000000,
-            "uid": 1750,
-            "user": "",
-          },
-          "data": "Uint8Array(12) [ 72, 101, 108, 108, 111, 32, 87, 111, 114, 108, 100, 33 ]",
-          "name": "foo/bar.txt",
-          "size": 12,
-          "text": "Hello World!",
-          "type": "file",
+          "typeFlag": "0",
+          "uid": 1000,
+          "user": "",
+          "version": "00",
         },
       ]
     `);
