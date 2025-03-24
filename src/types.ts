@@ -1,6 +1,4 @@
-import type { TarFileItemType } from "./item-types";
-
-export type { TarFileItemType, TarFileItemTypeValue } from "./item-types";
+export type { TarFileItemType, TarFileItemTypeValue } from "./entry";
 
 // ------------ Create ------------
 
@@ -22,27 +20,6 @@ export type TarFileItem<DataT = Uint8Array> = {
    */
   attrs?: TarFileAttrs;
 };
-
-// ------------ Parsed ------------
-
-export interface ParsedTarFileItem extends TarFileItem {
-  /**
-   * The type of file system element. It is usually `"file"` or `"directory"`.
-   */
-  type: TarFileItemType | undefined;
-
-  /**
-   * The size of the file in bytes.
-   */
-  size: number;
-
-  /**
-   * The textual representation of the file data. This property is read-only.
-   */
-  readonly text: string;
-}
-
-export type ParsedTarFileItemMeta = Omit<ParsedTarFileItem, "data" | "text">;
 
 // ------------ Attrs ------------
 
