@@ -104,17 +104,33 @@ export function parseTar<
       // No default
     }
 
+    let user, group;
     // Ustar indicator (offset: 257 - length: 6)
-    // Ignore
+    const ustar = _readString(buffer, offset + 257, 6);
+    if (ustar == 'ustar'){
+      // Ustar version (offset: 263 - length: 2)
+      // Ignore
 
-    // Ustar version (offset: 263 - length: 2)
-    // Ignore
+      // File owner user (offset: 265 - length: 32)
+      user = _readString(buffer, offset + 265, 32);
 
-    // File owner user (offset: 265 - length: 32)
-    const user = _readString(buffer, offset + 265, 32);
+      // File owner group (offset: 297 - length: 32)
+      group = _readString(buffer, offset + 297, 32);
 
-    // File owner group (offset: 297 - length: 32)
-    const group = _readString(buffer, offset + 297, 32);
+      // Filename prefix (offset: 345 - length: 155)
+      const prefix = _readString(buffer, offset + 345, 155);
+      if (prefix){
+        const prefixEndsWithSlash = prefix.endsWith('/');
+        const nameStartsWithSlash = name.startsWith('/');
+        if (prefixEndsWithSlash && nameStartsWithSlash){
+          name = prefix + name.substring(1);
+        } else if (prefixEndsWithSlash || nameStartsWithSlash){
+          name = prefix + name;
+        } else {
+          name = prefix + '/' + name;
+        }
+      }
+    }
 
     // Group all file metadata
     const meta: ParsedTarFileItemMeta = {
