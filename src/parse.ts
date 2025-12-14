@@ -1,11 +1,17 @@
-import type { ParsedTarFileItem, ParsedTarFileItemMeta } from "./types";
-import { tarItemTypeMap } from "./item-types";
+import {
+  emptyTarEntryHeaders,
+  TarEntryCtor,
+  tarEntryHeaderKeys,
+  tarEntryHeaders,
+  tarNumericHeaders,
+} from "./entry";
+import type { TarEntry, TarEntryHeaders, TarEntryHeaderKey } from "./entry";
 
 export interface ParseTarOptions {
   /**
    * A filter function that determines whether a file entry should be skipped or not.
    */
-  filter?: (file: ParsedTarFileItemMeta) => boolean;
+  filter?: (entry: TarEntryHeaders) => boolean;
 
   /**
    * If `true`, only the metadata of the files will be parsed, and the file data will be omitted for listing purposes.
@@ -23,65 +29,56 @@ export function parseTar<
   _ = never,
   _Opts extends ParseTarOptions = ParseTarOptions,
   // prettier-ignore
-  _ItemType extends ParsedTarFileItem | ParsedTarFileItemMeta =
-     _Opts["metaOnly"] extends true ? ParsedTarFileItemMeta : ParsedTarFileItem,
->(data: ArrayBuffer | Uint8Array, opts?: _Opts): _ItemType[] {
-  const buffer = (data as Uint8Array).buffer || data;
+  _EntryType extends TarEntry | TarEntryHeaders =
+     _Opts["metaOnly"] extends true ? TarEntryHeaders : TarEntry,
+>(_data: ArrayBuffer | Uint8Array, opts?: _Opts): _EntryType[] {
+  const data = _data instanceof Uint8Array ? _data : new Uint8Array(_data);
 
-  const files: _ItemType[] = [];
+  const entries: _EntryType[] = [];
 
   let offset = 0;
 
-  let nextExtendedHeader: undefined | Record<string, string | undefined>;
-  let globalExtendedHeader: undefined | Record<string, string | undefined>;
+  let nextExtendedHeader: undefined | Partial<TarEntryHeaders>;
+  let globalExtendedHeader: undefined | Partial<TarEntryHeaders>;
 
-  while (offset < buffer.byteLength - 512) {
-    // File name (offset: 0 - length: 100)
-    let name = _readString(buffer, offset, 100);
-    if (name.length === 0) {
+  const tarEntryView: ProxyHandler<Partial<TarEntry> & { data: Uint8Array }> = {
+    get(self, prop) {
+      let value = self[prop as TarEntryHeaderKey];
+      if (value !== undefined) {
+        return value;
+      }
+      const h = tarEntryHeaders[prop as TarEntryHeaderKey];
+      if (!h) {
+        return undefined;
+      }
+      value = tarNumericHeaders.has(prop as any)
+        ? readNumber(self.data, h[0], h[1])
+        : readString(self.data, h[0], h[1]);
+      return (self[prop as TarEntryHeaderKey] = value);
+    },
+    ownKeys() {
+      return tarEntryHeaderKeys;
+    },
+  };
+
+  while (offset < data.byteLength - 512) {
+    const entryData = data.subarray(offset, 512);
+    const entryObj = new TarEntryCtor(entryData);
+    const entry = new Proxy(entryObj, tarEntryView);
+
+    if (entry.path.length === 0) {
       break;
     }
 
-    // Long file-name handling
-    if (nextExtendedHeader) {
-      const longName = nextExtendedHeader.path || nextExtendedHeader.linkpath;
-      if (longName) {
-        name = longName;
-      }
-    }
-
-    // File mode (offset: 100 - length: 8)
-    const mode = _readString(buffer, offset + 100, 8).trim();
-
-    // File uid (offset: 108 - length: 8)
-    const uid = Number.parseInt(_readString(buffer, offset + 108, 8));
-
-    // File gid (offset: 116 - length: 8)
-    const gid = Number.parseInt(_readString(buffer, offset + 116, 8));
-
-    // File size (offset: 124 - length: 12)
-    const size = _readNumber(buffer, offset + 124, 12);
-
-    // Calculate next seek offset based on size
+    const size = entry.size || 0;
     const seek = 512 + 512 * Math.trunc(size / 512) + (size % 512 ? 512 : 0);
 
-    // File mtime (offset: 136 - length: 12)
-    const mtime = _readNumber(buffer, offset + 136, 12);
-
-    // File type (offset: 156 - length: 1)
-    // prettier-ignore
-    const _type = (_readString(buffer, offset + 156, 1) || "0") as keyof typeof tarItemTypeMap;
-    const type = tarItemTypeMap[_type] || _type;
-
-    // Special types
-    switch (type) {
-      // Extended headers for next entry
-      case "extendedHeader" /* x */:
-      case "globalExtendedHeader" /* g */: {
-        const headers = _parseExtendedHeaders(
-          new Uint8Array(buffer, offset + 512, size),
-        );
-        if (type === "extendedHeader") {
+    // Special types for next entry
+    switch (entry.typeFlag) {
+      case "x" /* extendedHeader */:
+      case "g" /* globalExtendedHeader */: {
+        const headers = parseExtendedHeaders(data.subarray(offset + 512, size));
+        if (entry.typeFlag === "x") {
           nextExtendedHeader = headers;
         } else {
           nextExtendedHeader = undefined;
@@ -93,78 +90,38 @@ export function parseTar<
         offset += seek;
         continue;
       }
-      // GNU tar long file names
-      case "gnuLongFileName" /* L */:
-      case "gnuOldLongFileName" /* N */:
-      case "gnuLongLinkName" /* K */: {
-        nextExtendedHeader = { path: _readString(buffer, offset + 512, size) };
+      case "L" /* gnuLongFileName */:
+      case "N" /* gnuOldLongFileName */:
+      case "K" /* gnuLongLinkName */: {
+        nextExtendedHeader = { path: readString(data, offset + 512, size) };
         offset += seek;
         continue;
       }
-      // No default
     }
-
-    // Ustar indicator (offset: 257 - length: 6)
-    // Ignore
-
-    // Ustar version (offset: 263 - length: 2)
-    // Ignore
-
-    // File owner user (offset: 265 - length: 32)
-    const user = _readString(buffer, offset + 265, 32);
-
-    // File owner group (offset: 297 - length: 32)
-    const group = _readString(buffer, offset + 297, 32);
-
-    // Group all file metadata
-    const meta: ParsedTarFileItemMeta = {
-      name,
-      type,
-      size,
-      attrs: {
-        ...globalExtendedHeader,
-        ...nextExtendedHeader,
-        mode,
-        uid,
-        gid,
-        mtime,
-        user,
-        group,
-      },
-    };
 
     // Reset next extended header
     nextExtendedHeader = undefined;
 
     // Filter
-    if (opts?.filter && !opts.filter(meta)) {
+    if (opts?.filter && !opts.filter(entry)) {
       offset += seek;
       continue;
     }
 
     // Meta-only mode
     if (opts?.metaOnly) {
-      files.push(meta as _ItemType);
+      entries.push(entry as _EntryType);
       offset += seek;
       continue;
     }
 
-    // Data (offset: 512 - length: size)
-    const data =
-      size === 0 ? undefined : new Uint8Array(buffer, offset + 512, size);
+    entries.push(entry as _EntryType);
 
-    files.push({
-      ...meta,
-      data,
-      get text() {
-        return new TextDecoder().decode(this.data);
-      },
-    } satisfies ParsedTarFileItem as _ItemType);
-
+    // Next
     offset += seek;
   }
 
-  return files;
+  return entries;
 }
 
 /**
@@ -192,15 +149,18 @@ export async function parseTarGzip(
   return parseTar(decompressedData, opts);
 }
 
-function _readString(buffer: ArrayBufferLike, offset: number, size: number) {
-  const view = new Uint8Array(buffer, offset, size);
+// ---- Headers Data View ----
+
+const textDecoder = new TextDecoder();
+
+function readString(data: Uint8Array, offset: number, size: number): string {
+  const view = data.subarray(offset, offset + size);
   const i = view.indexOf(0);
-  const td = new TextDecoder();
-  return td.decode(i === -1 ? view : view.slice(0, i));
+  return textDecoder.decode(i === -1 ? view : view.slice(0, i));
 }
 
-function _readNumber(buffer: ArrayBufferLike, offset: number, size: number) {
-  const view = new Uint8Array(buffer, offset, size);
+function readNumber(data: Uint8Array, offset: number, size: number): number {
+  const view = data.subarray(offset, offset + size);
   let str = "";
   for (let i = 0; i < size; i++) {
     str += String.fromCodePoint(view[i]);
@@ -208,10 +168,10 @@ function _readNumber(buffer: ArrayBufferLike, offset: number, size: number) {
   return Number.parseInt(str, 8);
 }
 
-function _parseExtendedHeaders(data: Uint8Array) {
+function parseExtendedHeaders(data: Uint8Array) {
   // TODO: Improve performance by using byte offset reads
   const dataStr = new TextDecoder().decode(data);
-  const headers: Record<string, string | undefined> = {};
+  const headers: Record<string, string> = {};
   for (const line of dataStr.split("\n")) {
     const s = line.split(" ")[1]?.split("=");
     if (s) {
