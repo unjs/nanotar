@@ -8,7 +8,9 @@ export interface CreateTarOptions {
   attrs?: TarFileAttrs;
 }
 
-export type TarFileInput = TarFileItem<string | Uint8Array | ArrayBuffer>;
+export type TarFileInput = TarFileItem<
+  string | Uint8Array<ArrayBuffer> | ArrayBuffer
+>;
 
 /**
  * Creates a TAR file from a list of file inputs and options, returning the TAR file as an `Uint8Array`.
@@ -21,9 +23,9 @@ export type TarFileInput = TarFileItem<string | Uint8Array | ArrayBuffer>;
 export function createTar(
   files: TarFileInput[],
   opts: CreateTarOptions = {},
-): Uint8Array {
+): Uint8Array<ArrayBuffer> {
   // Normalize file data in order to allow calculating final size
-  type NormalizedFile = TarFileItem<Uint8Array> & { size: number };
+  type NormalizedFile = TarFileItem<Uint8Array<ArrayBuffer>> & { size: number };
   const _files: NormalizedFile[] = files.map((file) => {
     const data = _normalizeData(file.data);
     return {
@@ -183,13 +185,14 @@ function _leftPad(input: number | string, targetLength: number) {
 }
 
 function _normalizeData(
-  data: string | Uint8Array | ArrayBuffer | null | undefined,
+  data: string | Uint8Array<ArrayBuffer> | ArrayBuffer | null | undefined,
 ) {
   if (data === null || data === undefined) {
     return undefined;
   }
   if (typeof data === "string") {
-    return new TextEncoder().encode(data);
+    // TODO (43081j): remove this cast when TextEncoder returns it natively
+    return new TextEncoder().encode(data) as Uint8Array<ArrayBuffer>;
   }
   if (data instanceof ArrayBuffer) {
     return new Uint8Array(data);
