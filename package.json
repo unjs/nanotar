@@ -9,29 +9,19 @@
   ],
   "type": "module",
   "sideEffects": false,
-  "main": "./dist/index.cjs",
-  "module": "./dist/index.mjs",
-  "types": "./dist/index.d.ts",
+  "main": "./dist/index.mjs",
+  "types": "./dist/index.d.mts",
   "exports": {
-    ".": {
-      "import": {
-        "types": "./dist/index.d.mts",
-        "default": "./dist/index.mjs"
-      },
-      "require": {
-        "types": "./dist/index.d.cts",
-        "default": "./dist/index.cjs"
-      }
-    }
+    ".": "./dist/index.mjs"
   },
   "scripts": {
-    "build": "unbuild",
+    "build": "obuild",
     "dev": "vitest dev",
     "play": "jiti playground",
     "lint": "oxlint . && oxfmt --check src test",
     "lint:fix": "oxlint . --fix && oxfmt src test",
     "prepack": "pnpm run build",
-    "release": "pnpm test && changelogen --release && npm publish && git push --follow-tags",
+    "release": "pnpm test && pnpm build && changelogen --release && npm publish && git push --follow-tags",
     "test": "pnpm lint && pnpm test:types && vitest run --coverage",
     "test:types": "tsgo --noEmit --skipLibCheck"
   },
@@ -40,12 +30,11 @@
     "@typescript/native-preview": "7.0.0-dev.20260211.1",
     "@vitest/coverage-v8": "^4.0.18",
     "changelogen": "^0.6.2",
-    "eslint-config-unjs": "^0.6.2",
     "jiti": "^2.6.1",
+    "obuild": "^0.4.27",
     "oxfmt": "^0.31.0",
     "oxlint": "^1.46.0",
     "typescript": "^5.9.3",
-    "unbuild": "^3.6.1",
     "vitest": "^4.0.18"
   },
   "packageManager": "pnpm@10.29.3"
