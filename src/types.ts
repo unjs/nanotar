@@ -4,7 +4,7 @@ export type { TarFileItemType, TarFileItemTypeValue } from "./item-types.ts";
 
 // ------------ Create ------------
 
-export type TarFileItem<DataT = Uint8Array> = {
+export type TarFileItem<DataT = Uint8Array<ArrayBuffer>> = {
   /**
    * File name
    */

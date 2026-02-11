@@ -25,8 +25,8 @@ export function parseTar<
   // prettier-ignore
   _ItemType extends ParsedTarFileItem | ParsedTarFileItemMeta =
      _Opts["metaOnly"] extends true ? ParsedTarFileItemMeta : ParsedTarFileItem,
->(data: ArrayBuffer | Uint8Array, opts?: _Opts): _ItemType[] {
-  const buffer = (data as Uint8Array).buffer || data;
+>(data: ArrayBuffer | Uint8Array<ArrayBuffer>, opts?: _Opts): _ItemType[] {
+  const buffer = (data as Uint8Array<ArrayBuffer>).buffer || data;
 
   const files: _ItemType[] = [];
 
@@ -177,7 +177,7 @@ export function parseTar<
  * @returns {Promise<TarFileItem[]>} A promise that resolves to an array of file items as described by {@link TarFileItem}.
  */
 export async function parseTarGzip(
-  data: ArrayBuffer | Uint8Array,
+  data: ArrayBuffer | Uint8Array<ArrayBuffer>,
   opts: ParseTarOptions & { compression?: CompressionFormat } = {},
 ): Promise<ParsedTarFileItem[]> {
   const stream = new ReadableStream({
@@ -251,7 +251,7 @@ function _readNumber(buffer: ArrayBufferLike, offset: number, size: number) {
   return Number.parseInt(str, 8);
 }
 
-function _parseExtendedHeaders(data: Uint8Array) {
+function _parseExtendedHeaders(data: Uint8Array<ArrayBuffer>) {
   // TODO: Improve performance by using byte offset reads
   const dataStr = new TextDecoder().decode(data);
   const headers: Record<string, string | undefined> = {};

@@ -8,7 +8,7 @@ export interface CreateTarOptions {
   attrs?: TarFileAttrs;
 }
 
-export type TarFileInput = TarFileItem<string | Uint8Array | ArrayBuffer>;
+export type TarFileInput = TarFileItem<string | Uint8Array<ArrayBuffer> | ArrayBuffer>;
 
 /**
  * Creates a TAR file from a list of file inputs and options, returning the TAR file as an `Uint8Array`.
@@ -18,9 +18,12 @@ export type TarFileInput = TarFileItem<string | Uint8Array | ArrayBuffer>;
  * @param {CreateTarOptions} opts - File creation configuration options, including default file attributes. See {@link CreateTarOptions}.
  * @returns {Uint8Array} The TAR file encoded as an `Uint8Array`.
  */
-export function createTar(files: TarFileInput[], opts: CreateTarOptions = {}): Uint8Array {
+export function createTar(
+  files: TarFileInput[],
+  opts: CreateTarOptions = {},
+): Uint8Array<ArrayBuffer> {
   // Normalize file data in order to allow calculating final size
-  type NormalizedFile = TarFileItem<Uint8Array> & { size: number };
+  type NormalizedFile = TarFileItem<Uint8Array<ArrayBuffer>> & { size: number };
   const _files: NormalizedFile[] = files.map((file) => {
     const data = _normalizeData(file.data);
     return {
@@ -148,7 +151,7 @@ export function createTarGzipStream(
 export async function createTarGzip(
   files: TarFileInput[],
   opts: CreateTarOptions & { compression?: CompressionFormat } = {},
-): Promise<Uint8Array> {
+): Promise<Uint8Array<ArrayBuffer>> {
   const data = await new Response(createTarGzipStream(files, opts))
     .arrayBuffer()
     .then((buffer) => new Uint8Array(buffer));
@@ -168,7 +171,7 @@ function _leftPad(input: number | string, targetLength: number) {
   return String(input).padStart(targetLength, "0");
 }
 
-function _normalizeData(data: string | Uint8Array | ArrayBuffer | null | undefined) {
+function _normalizeData(data: string | Uint8Array<ArrayBuffer> | ArrayBuffer | null | undefined) {
   if (data === null || data === undefined) {
     return undefined;
   }
