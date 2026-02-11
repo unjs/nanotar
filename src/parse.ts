@@ -75,6 +75,9 @@ export function parseTar<
     // File owner group (offset: 297 - length: 32)
     const group = _readString(buffer, offset + 297, 32);
 
+    // Sanitize name to prevent path traversal
+    name = _sanitizePath(name);
+
     // Group all file metadata
     const meta: ParsedTarFileItemMeta = {
       name,
@@ -146,6 +149,49 @@ export async function parseTarGzip(
   const decompressedData = await new Response(stream).arrayBuffer();
 
   return parseTar(decompressedData, opts);
+}
+
+/**
+ * Sanitizes a file path to prevent path traversal attacks.
+ * Removes `..` segments, leading slashes, and drive letters.
+ */
+function _sanitizePath(path: string): string {
+  // Normalize backslashes to forward slashes
+  let normalized = path.replace(/\\/g, "/");
+
+  // Remove drive letters (e.g., "C:/")
+  normalized = normalized.replace(/^[a-zA-Z]:\//, "");
+
+  // Remove leading slashes
+  normalized = normalized.replace(/^\/+/, "");
+
+  // Check if it starts with "./" to preserve this common prefix
+  const hasLeadingDotSlash = normalized.startsWith("./");
+
+  // Resolve path segments, removing ".." and "."
+  const parts = normalized.split("/");
+  const resolved: string[] = [];
+  for (const part of parts) {
+    if (part === "..") {
+      resolved.pop();
+    } else if (part !== "." && part !== "") {
+      resolved.push(part);
+    }
+  }
+
+  let result = resolved.join("/");
+
+  // Restore leading "./" if the original path had it
+  if (hasLeadingDotSlash && !result.startsWith("./")) {
+    result = "./" + result;
+  }
+
+  // Preserve trailing slash (indicates directory)
+  if (path.endsWith("/") && !result.endsWith("/")) {
+    result += "/";
+  }
+
+  return result;
 }
 
 function _readString(buffer: ArrayBufferLike, offset: number, size: number) {
