@@ -151,7 +151,7 @@ export function createTarGzipStream(
 export async function createTarGzip(
   files: TarFileInput[],
   opts: CreateTarOptions & { compression?: CompressionFormat } = {},
-): Promise<Uint8Array> {
+): Promise<Uint8Array<ArrayBuffer>> {
   const data = await new Response(createTarGzipStream(files, opts))
     .arrayBuffer()
     .then((buffer) => new Uint8Array(buffer));
