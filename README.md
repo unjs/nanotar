@@ -40,13 +40,7 @@ Import:
 
 ```js
 // ESM
-import {
-  createTar,
-  createTarGzip,
-  createTarGzipStream,
-  parseTar,
-  parseTarGzip,
-} from "nanotar";
+import { createTar, createTarGzip, createTarGzipStream, parseTar, parseTarGzip } from "nanotar";
 
 // CommonJS
 const { createTar } = require("nanotar");

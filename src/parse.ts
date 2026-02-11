@@ -78,9 +78,7 @@ export function parseTar<
       // Extended headers for next entry
       case "extendedHeader" /* x */:
       case "globalExtendedHeader" /* g */: {
-        const headers = _parseExtendedHeaders(
-          new Uint8Array(buffer, offset + 512, size),
-        );
+        const headers = _parseExtendedHeaders(new Uint8Array(buffer, offset + 512, size));
         if (type === "extendedHeader") {
           nextExtendedHeader = headers;
         } else {
@@ -153,8 +151,7 @@ export function parseTar<
     }
 
     // Data (offset: 512 - length: size)
-    const data =
-      size === 0 ? undefined : new Uint8Array(buffer, offset + 512, size);
+    const data = size === 0 ? undefined : new Uint8Array(buffer, offset + 512, size);
 
     files.push({
       ...meta,

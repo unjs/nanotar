@@ -6,7 +6,7 @@
 
 ### 🚀 Enhancements
 
-- **parse:** ⚠️  Support extended item types and headers ([#30](https://github.com/unjs/nanotar/pull/30))
+- **parse:** ⚠️ Support extended item types and headers ([#30](https://github.com/unjs/nanotar/pull/30))
 - **parse:** Handle long file names ([#31](https://github.com/unjs/nanotar/pull/31))
 
 ### 🩹 Fixes
@@ -24,7 +24,7 @@
 
 #### ⚠️ Breaking Changes
 
-- **parse:** ⚠️  Support extended item types and headers ([#30](https://github.com/unjs/nanotar/pull/30))
+- **parse:** ⚠️ Support extended item types and headers ([#30](https://github.com/unjs/nanotar/pull/30))
 
 ### ❤️ Contributors
 

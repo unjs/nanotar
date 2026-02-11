@@ -1,12 +1,6 @@
 import { expect, it, describe } from "vitest";
 import { inspect } from "node:util";
-import {
-  createTar,
-  createTarGzip,
-  parseTar,
-  parseTarGzip,
-  TarFileItem,
-} from "../src";
+import { createTar, createTarGzip, parseTar, parseTarGzip, TarFileItem } from "../src";
 import { readFile } from "node:fs/promises";
 
 const mtime = 1_700_000_000_000;
@@ -31,9 +25,7 @@ describe("path traversal prevention", () => {
   });
 
   it("strips backslash traversal sequences", () => {
-    const tar = createTar([
-      { name: String.raw`..\..\windows\system32\config`, data: "malicious" },
-    ]);
+    const tar = createTar([{ name: String.raw`..\..\windows\system32\config`, data: "malicious" }]);
     const files = parseTar(tar);
     expect(files[0].name).toBe("windows/system32/config");
   });
@@ -45,17 +37,13 @@ describe("path traversal prevention", () => {
   });
 
   it("handles mixed traversal patterns", () => {
-    const tar = createTar([
-      { name: "/foo/../../../etc/passwd", data: "malicious" },
-    ]);
+    const tar = createTar([{ name: "/foo/../../../etc/passwd", data: "malicious" }]);
     const files = parseTar(tar);
     expect(files[0].name).toBe("etc/passwd");
   });
 
   it("handles deeply nested traversal", () => {
-    const tar = createTar([
-      { name: "a/b/c/../../../../../../../etc/passwd", data: "malicious" },
-    ]);
+    const tar = createTar([{ name: "a/b/c/../../../../../../../etc/passwd", data: "malicious" }]);
     const files = parseTar(tar);
     expect(files[0].name).toBe("etc/passwd");
   });
@@ -73,9 +61,7 @@ describe("path traversal prevention", () => {
   });
 
   it("sanitizes ./ prefix combined with traversal", () => {
-    const tar = createTar([
-      { name: "./../../../etc/passwd", data: "malicious" },
-    ]);
+    const tar = createTar([{ name: "./../../../etc/passwd", data: "malicious" }]);
     const files = parseTar(tar);
     expect(files[0].name).toBe("./etc/passwd");
   });
@@ -157,9 +143,7 @@ describe("parse", () => {
 
     for (const format of formats) {
       it(`parseTar (${format})`, async () => {
-        const blob = await readFile(
-          new URL(`fixtures/out/${format}.tar`, import.meta.url),
-        );
+        const blob = await readFile(new URL(`fixtures/out/${format}.tar`, import.meta.url));
         const parsed = await parseTar(blob);
 
         const expectedFiles = ["./foo.txt", "./bar/baz.txt"];

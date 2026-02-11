@@ -18,10 +18,7 @@ export type TarFileInput = TarFileItem<string | Uint8Array | ArrayBuffer>;
  * @param {CreateTarOptions} opts - File creation configuration options, including default file attributes. See {@link CreateTarOptions}.
  * @returns {Uint8Array} The TAR file encoded as an `Uint8Array`.
  */
-export function createTar(
-  files: TarFileInput[],
-  opts: CreateTarOptions = {},
-): Uint8Array {
+export function createTar(files: TarFileInput[], opts: CreateTarOptions = {}): Uint8Array {
   // Normalize file data in order to allow calculating final size
   type NormalizedFile = TarFileItem<Uint8Array> & { size: number };
   const _files: NormalizedFile[] = files.map((file) => {
@@ -58,8 +55,7 @@ export function createTar(
     _writeString(buffer, file.name, offset, 100);
 
     // File mode (offset: 100 - length: 8)
-    const mode =
-      file.attrs?.mode ?? opts.attrs?.mode ?? (isDir ? "775" : "664");
+    const mode = file.attrs?.mode ?? opts.attrs?.mode ?? (isDir ? "775" : "664");
     _writeString(buffer, _leftPad(mode, 7), offset + 100, 8);
 
     // File uid (offset: 108 - length: 8)
@@ -75,12 +71,7 @@ export function createTar(
 
     // File mtime (offset: 136 - length: 12)
     const mtime = file.attrs?.mtime ?? opts.attrs?.mtime ?? Date.now();
-    _writeString(
-      buffer,
-      _leftPad(Math.trunc(mtime / 1000).toString(8), 11),
-      offset + 136,
-      12,
-    );
+    _writeString(buffer, _leftPad(Math.trunc(mtime / 1000).toString(8), 11), offset + 136, 12);
 
     // File type (offset: 156 - length: 1)
     const type = isDir ? "5" : "0";
@@ -164,12 +155,7 @@ export async function createTarGzip(
   return data;
 }
 
-function _writeString(
-  buffer: ArrayBuffer,
-  str: string,
-  offset: number,
-  size: number,
-) {
+function _writeString(buffer: ArrayBuffer, str: string, offset: number, size: number) {
   const strView = new Uint8Array(buffer, offset, size);
   const te = new TextEncoder();
   const written = te.encodeInto(str, strView).written;
@@ -182,9 +168,7 @@ function _leftPad(input: number | string, targetLength: number) {
   return String(input).padStart(targetLength, "0");
 }
 
-function _normalizeData(
-  data: string | Uint8Array | ArrayBuffer | null | undefined,
-) {
+function _normalizeData(data: string | Uint8Array | ArrayBuffer | null | undefined) {
   if (data === null || data === undefined) {
     return undefined;
   }
