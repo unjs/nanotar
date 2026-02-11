@@ -36,7 +36,7 @@ export function parseTar<
 
   while (offset < buffer.byteLength - 512) {
     // File name (offset: 0 - length: 100)
-    const name = _readString(buffer, offset, 100);
+    let name = _readString(buffer, offset, 100);
     if (name.length === 0) {
       break;
     }
