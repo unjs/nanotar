@@ -1,4 +1,4 @@
-import type { TarFileItem, TarFileAttrs } from "./types";
+import type { TarFileItem, TarFileAttrs } from "./types.ts";
 
 export interface CreateTarOptions {
   /**
@@ -33,7 +33,7 @@ export function createTar(files: TarFileInput[], opts: CreateTarOptions = {}): U
   // Create data buffer
   let tarDataSize = 0;
   for (let i = 0; i < files.length; i++) {
-    const size = _files[i].data?.length ?? 0;
+    const size = _files[i]!.data?.length ?? 0;
     tarDataSize += 512 + 512 * Math.trunc(size / 512);
     if (size % 512) {
       tarDataSize += 512;
@@ -96,7 +96,7 @@ export function createTar(files: TarFileInput[], opts: CreateTarOptions = {}): U
     const header = new Uint8Array(buffer, offset, 512);
     let chksum = 0;
     for (let i = 0; i < 512; i++) {
-      chksum += header[i];
+      chksum += header[i]!;
     }
     _writeString(buffer, chksum.toString(8), offset + 148, 8);
 
@@ -104,7 +104,7 @@ export function createTar(files: TarFileInput[], opts: CreateTarOptions = {}): U
     if (!isDir) {
       const destArray = new Uint8Array(buffer, offset + 512, file.size);
       for (let byteIdx = 0; byteIdx < file.size; byteIdx++) {
-        destArray[byteIdx] = file.data![byteIdx];
+        destArray[byteIdx] = file.data![byteIdx]!;
       }
       offset += 512 * Math.trunc(file.size / 512);
       if (file.size % 512) {

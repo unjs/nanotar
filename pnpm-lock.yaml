@@ -20,9 +20,6 @@ importers:
       changelogen:
         specifier: ^0.6.2
         version: 0.6.2(magicast@0.5.2)
-      jiti:
-        specifier: ^2.6.1
-        version: 2.6.1
       obuild:
         specifier: ^0.4.27
         version: 0.4.27(@typescript/native-preview@7.0.0-dev.20260211.1)(magicast@0.5.2)(picomatch@4.0.3)(rollup@4.57.1)(typescript@5.9.3)

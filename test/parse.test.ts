@@ -1,6 +1,12 @@
 import { expect, it, describe } from "vitest";
 import { inspect } from "node:util";
-import { createTar, createTarGzip, parseTar, parseTarGzip, TarFileItem } from "../src";
+import {
+  createTar,
+  createTarGzip,
+  parseTar,
+  parseTarGzip,
+  type TarFileItem,
+} from "../src/index.ts";
 import { readFile } from "node:fs/promises";
 
 const mtime = 1_700_000_000_000;
@@ -15,55 +21,55 @@ describe("path traversal prevention", () => {
   it("strips ../ path traversal sequences", () => {
     const tar = createTar([{ name: "../../etc/passwd", data: "malicious" }]);
     const files = parseTar(tar);
-    expect(files[0].name).toBe("etc/passwd");
+    expect(files[0]!.name).toBe("etc/passwd");
   });
 
   it("strips leading absolute paths", () => {
     const tar = createTar([{ name: "/etc/shadow", data: "malicious" }]);
     const files = parseTar(tar);
-    expect(files[0].name).toBe("etc/shadow");
+    expect(files[0]!.name).toBe("etc/shadow");
   });
 
   it("strips backslash traversal sequences", () => {
     const tar = createTar([{ name: String.raw`..\..\windows\system32\config`, data: "malicious" }]);
     const files = parseTar(tar);
-    expect(files[0].name).toBe("windows/system32/config");
+    expect(files[0]!.name).toBe("windows/system32/config");
   });
 
   it("strips drive letter prefixed paths", () => {
     const tar = createTar([{ name: "C:/windows/system32", data: "malicious" }]);
     const files = parseTar(tar);
-    expect(files[0].name).toBe("windows/system32");
+    expect(files[0]!.name).toBe("windows/system32");
   });
 
   it("handles mixed traversal patterns", () => {
     const tar = createTar([{ name: "/foo/../../../etc/passwd", data: "malicious" }]);
     const files = parseTar(tar);
-    expect(files[0].name).toBe("etc/passwd");
+    expect(files[0]!.name).toBe("etc/passwd");
   });
 
   it("handles deeply nested traversal", () => {
     const tar = createTar([{ name: "a/b/c/../../../../../../../etc/passwd", data: "malicious" }]);
     const files = parseTar(tar);
-    expect(files[0].name).toBe("etc/passwd");
+    expect(files[0]!.name).toBe("etc/passwd");
   });
 
   it("preserves safe relative paths", () => {
     const tar = createTar([{ name: "safe/path/file.txt", data: "safe" }]);
     const files = parseTar(tar);
-    expect(files[0].name).toBe("safe/path/file.txt");
+    expect(files[0]!.name).toBe("safe/path/file.txt");
   });
 
   it("preserves ./ prefix in safe paths", () => {
     const tar = createTar([{ name: "./safe/path/file.txt", data: "safe" }]);
     const files = parseTar(tar);
-    expect(files[0].name).toBe("./safe/path/file.txt");
+    expect(files[0]!.name).toBe("./safe/path/file.txt");
   });
 
   it("sanitizes ./ prefix combined with traversal", () => {
     const tar = createTar([{ name: "./../../../etc/passwd", data: "malicious" }]);
     const files = parseTar(tar);
-    expect(files[0].name).toBe("./etc/passwd");
+    expect(files[0]!.name).toBe("./etc/passwd");
   });
 });
 

@@ -17,7 +17,7 @@
   "scripts": {
     "build": "obuild",
     "dev": "vitest dev",
-    "play": "jiti playground",
+    "play": "node playground/index.ts",
     "lint": "oxlint . && oxfmt --check src test",
     "lint:fix": "oxlint . --fix && oxfmt src test",
     "prepack": "pnpm run build",
@@ -30,7 +30,6 @@
     "@typescript/native-preview": "7.0.0-dev.20260211.1",
     "@vitest/coverage-v8": "^4.0.18",
     "changelogen": "^0.6.2",
-    "jiti": "^2.6.1",
     "obuild": "^0.4.27",
     "oxfmt": "^0.31.0",
     "oxlint": "^1.46.0",

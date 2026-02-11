@@ -1,5 +1,5 @@
-import type { ParsedTarFileItem, ParsedTarFileItemMeta } from "./types";
-import { tarItemTypeMap } from "./item-types";
+import type { ParsedTarFileItem, ParsedTarFileItemMeta } from "./types.ts";
+import { tarItemTypeMap } from "./item-types.ts";
 
 export interface ParseTarOptions {
   /**
@@ -246,7 +246,7 @@ function _readNumber(buffer: ArrayBufferLike, offset: number, size: number) {
   const view = new Uint8Array(buffer, offset, size);
   let str = "";
   for (let i = 0; i < size; i++) {
-    str += String.fromCodePoint(view[i]);
+    str += String.fromCodePoint(view[i]!);
   }
   return Number.parseInt(str, 8);
 }
@@ -258,7 +258,7 @@ function _parseExtendedHeaders(data: Uint8Array) {
   for (const line of dataStr.split("\n")) {
     const s = line.split(" ")[1]?.split("=");
     if (s) {
-      headers[s[0]] = s[1];
+      headers[s[0]!] = s[1];
     }
   }
   return headers;

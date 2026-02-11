@@ -1,6 +1,6 @@
-import type { TarFileItemType } from "./item-types";
+import type { TarFileItemType } from "./item-types.ts";
 
-export type { TarFileItemType, TarFileItemTypeValue } from "./item-types";
+export type { TarFileItemType, TarFileItemTypeValue } from "./item-types.ts";
 
 // ------------ Create ------------
 
