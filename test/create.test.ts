@@ -1,6 +1,6 @@
 import { execSync } from "node:child_process";
 import { describe, expect, it } from "vitest";
-import { createTarGzip, TarFileItem } from "../src";
+import { createTarGzip, type TarFileItem } from "../src/index.ts";
 
 const mtime = 1_700_000_000_000;
 

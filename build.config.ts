@@ -1,3 +1,10 @@
-import { defineBuildConfig } from "unbuild";
+import { defineBuildConfig } from "obuild/config";
 
-export default defineBuildConfig({});
+export default defineBuildConfig({
+  entries: [
+    {
+      type: "bundle",
+      input: ["src/index.ts"],
+    }
+  ]
+});

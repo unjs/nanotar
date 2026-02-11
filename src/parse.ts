@@ -1,5 +1,5 @@
-import type { ParsedTarFileItem, ParsedTarFileItemMeta } from "./types";
-import { tarItemTypeMap } from "./item-types";
+import type { ParsedTarFileItem, ParsedTarFileItemMeta } from "./types.ts";
+import { tarItemTypeMap } from "./item-types.ts";
 
 export interface ParseTarOptions {
   /**
@@ -78,9 +78,7 @@ export function parseTar<
       // Extended headers for next entry
       case "extendedHeader" /* x */:
       case "globalExtendedHeader" /* g */: {
-        const headers = _parseExtendedHeaders(
-          new Uint8Array(buffer, offset + 512, size),
-        );
+        const headers = _parseExtendedHeaders(new Uint8Array(buffer, offset + 512, size));
         if (type === "extendedHeader") {
           nextExtendedHeader = headers;
         } else {
@@ -116,6 +114,9 @@ export function parseTar<
     // File owner group (offset: 297 - length: 32)
     const group = _readString(buffer, offset + 297, 32);
 
+    // Sanitize name to prevent path traversal
+    name = _sanitizePath(name);
+
     // Group all file metadata
     const meta: ParsedTarFileItemMeta = {
       name,
@@ -150,8 +151,7 @@ export function parseTar<
     }
 
     // Data (offset: 512 - length: size)
-    const data =
-      size === 0 ? undefined : new Uint8Array(buffer, offset + 512, size);
+    const data = size === 0 ? undefined : new Uint8Array(buffer, offset + 512, size);
 
     files.push({
       ...meta,
@@ -192,6 +192,49 @@ export async function parseTarGzip(
   return parseTar(decompressedData, opts);
 }
 
+/**
+ * Sanitizes a file path to prevent path traversal attacks.
+ * Removes `..` segments, leading slashes, and drive letters.
+ */
+function _sanitizePath(path: string): string {
+  // Normalize backslashes to forward slashes
+  let normalized = path.replace(/\\/g, "/");
+
+  // Remove drive letters (e.g., "C:/")
+  normalized = normalized.replace(/^[a-zA-Z]:\//, "");
+
+  // Remove leading slashes
+  normalized = normalized.replace(/^\/+/, "");
+
+  // Check if it starts with "./" to preserve this common prefix
+  const hasLeadingDotSlash = normalized.startsWith("./");
+
+  // Resolve path segments, removing ".." and "."
+  const parts = normalized.split("/");
+  const resolved: string[] = [];
+  for (const part of parts) {
+    if (part === "..") {
+      resolved.pop();
+    } else if (part !== "." && part !== "") {
+      resolved.push(part);
+    }
+  }
+
+  let result = resolved.join("/");
+
+  // Restore leading "./" if the original path had it
+  if (hasLeadingDotSlash && !result.startsWith("./")) {
+    result = "./" + result;
+  }
+
+  // Preserve trailing slash (indicates directory)
+  if (path.endsWith("/") && !result.endsWith("/")) {
+    result += "/";
+  }
+
+  return result;
+}
+
 function _readString(buffer: ArrayBufferLike, offset: number, size: number) {
   const view = new Uint8Array(buffer, offset, size);
   const i = view.indexOf(0);
@@ -203,7 +246,7 @@ function _readNumber(buffer: ArrayBufferLike, offset: number, size: number) {
   const view = new Uint8Array(buffer, offset, size);
   let str = "";
   for (let i = 0; i < size; i++) {
-    str += String.fromCodePoint(view[i]);
+    str += String.fromCodePoint(view[i]!);
   }
   return Number.parseInt(str, 8);
 }
@@ -215,7 +258,7 @@ function _parseExtendedHeaders(data: Uint8Array<ArrayBuffer>) {
   for (const line of dataStr.split("\n")) {
     const s = line.split(" ")[1]?.split("=");
     if (s) {
-      headers[s[0]] = s[1];
+      headers[s[0]!] = s[1];
     }
   }
   return headers;

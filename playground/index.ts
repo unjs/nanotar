@@ -1,5 +1,5 @@
 import { execSync } from "node:child_process";
-import { createTarGzip, parseTarGzip } from "../src";
+import { createTarGzip, parseTarGzip } from "../src/index.ts";
 
 async function main() {
   const data = await createTarGzip(
