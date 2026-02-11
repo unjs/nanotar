@@ -1,5 +1,36 @@
 # Changelog
 
+## v0.3.0
+
+[compare changes](https://github.com/unjs/nanotar/compare/v0.2.0...v0.3.0)
+
+### 🚀 Enhancements
+
+- **parse:** ⚠️  Support extended item types and headers ([#30](https://github.com/unjs/nanotar/pull/30))
+- **parse:** Handle long file names ([#31](https://github.com/unjs/nanotar/pull/31))
+
+### 🩹 Fixes
+
+- Sanitise paths ([#58](https://github.com/unjs/nanotar/pull/58))
+
+### 🏡 Chore
+
+- **release:** V0.2.0 ([7e35c5b](https://github.com/unjs/nanotar/commit/7e35c5b))
+
+### ✅ Tests
+
+- Add additional tests for different formats ([f13b802](https://github.com/unjs/nanotar/commit/f13b802))
+- Update fixture ([6fa56df](https://github.com/unjs/nanotar/commit/6fa56df))
+
+#### ⚠️ Breaking Changes
+
+- **parse:** ⚠️  Support extended item types and headers ([#30](https://github.com/unjs/nanotar/pull/30))
+
+### ❤️ Contributors
+
+- Daniel Roe ([@danielroe](https://github.com/danielroe))
+- Pooya Parsa ([@pi0](https://github.com/pi0))
+
 ## v0.2.0
 
 [compare changes](https://github.com/unjs/nanotar/compare/v0.1.1...v0.2.0)
