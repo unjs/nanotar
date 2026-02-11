@@ -176,8 +176,7 @@ function _normalizeData(data: string | Uint8Array<ArrayBuffer> | ArrayBuffer | n
     return undefined;
   }
   if (typeof data === "string") {
-    // TODO (43081j): remove this cast when TextEncoder returns it natively
-    return new TextEncoder().encode(data) as Uint8Array<ArrayBuffer>;
+    return new TextEncoder().encode(data);
   }
   if (data instanceof ArrayBuffer) {
     return new Uint8Array(data);
