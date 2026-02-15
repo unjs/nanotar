@@ -27,12 +27,12 @@
   },
   "devDependencies": {
     "@types/node": "^25.2.3",
-    "@typescript/native-preview": "7.0.0-dev.20260211.1",
+    "@typescript/native-preview": "7.0.0-dev.20260215.1",
     "@vitest/coverage-v8": "^4.0.18",
     "changelogen": "^0.6.2",
     "obuild": "^0.4.27",
-    "oxfmt": "^0.31.0",
-    "oxlint": "^1.46.0",
+    "oxfmt": "^0.32.0",
+    "oxlint": "^1.47.0",
     "typescript": "^5.9.3",
     "vitest": "^4.0.18"
   },
