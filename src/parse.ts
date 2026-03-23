@@ -54,10 +54,10 @@ export function parseTar<
     const mode = _readString(buffer, offset + 100, 8).trim();
 
     // File uid (offset: 108 - length: 8)
-    const uid = Number.parseInt(_readString(buffer, offset + 108, 8));
+    const uid = _readNumber(buffer, offset + 108, 8);
 
     // File gid (offset: 116 - length: 8)
-    const gid = Number.parseInt(_readString(buffer, offset + 116, 8));
+    const gid = _readNumber(buffer, offset + 116, 8);
 
     // File size (offset: 124 - length: 12)
     const size = _readNumber(buffer, offset + 124, 12);
