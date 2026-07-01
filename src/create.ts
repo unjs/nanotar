@@ -42,10 +42,15 @@ export function createTar(
       tarDataSize += 512;
     }
   }
-  let bufSize = 10_240 * Math.trunc(tarDataSize / 10_240);
-  if (tarDataSize % 10_240) {
-    bufSize += 10_240;
-  }
+  // Reserve at least two 512-byte zero blocks after the data for the
+  // end-of-archive marker (the tar format requires the archive to end with two
+  // consecutive zero blocks), then round up to a full 10_240-byte record. The
+  // ArrayBuffer is zero-initialized, so the trailing slack forms the marker.
+  // The `+ 1024` matters when `tarDataSize` is already a multiple of 10_240
+  // (no slack would be added otherwise, leaving the archive with no marker at
+  // all; strict readers such as pnpm reject that) or exactly 512 short of a
+  // record (a single zero block instead of the required two).
+  const bufSize = 10_240 * Math.ceil((tarDataSize + 1024) / 10_240);
   const buffer = new ArrayBuffer(bufSize);
 
   let offset = 0;
