@@ -1,6 +1,6 @@
 import { execSync } from "node:child_process";
 import { describe, expect, it } from "vitest";
-import { createTarGzip, type TarFileItem } from "../src/index.ts";
+import { createTar, createTarGzip, parseTar, type TarFileItem } from "../src/index.ts";
 
 const mtime = 1_700_000_000_000;
 
@@ -33,5 +33,28 @@ describe("create", () => {
       -rw-rw-r-- foo/bar.txt
        "
     `);
+  });
+
+  it("createTar emits GNU L header for filenames >100 bytes", () => {
+    const longName =
+      "a/very/long/path/that/definitely/exceeds/one/hundred/characters/in/total/length/yes/indeed/this/is/file.txt";
+    expect(longName.length).toBeGreaterThan(100);
+
+    const tar = createTar([{ name: longName, data: "hello", attrs: { mtime } }]);
+
+    // Roundtrip: parseTar should recover the full name
+    const parsed = parseTar(tar);
+    expect(parsed).toHaveLength(1);
+    expect(parsed[0]!.name).toBe(longName);
+    expect(parsed[0]!.size).toBe(5);
+  });
+
+  it("createTar long filename is readable by system tar", () => {
+    const longName =
+      "another/very/long/path/that/definitely/exceeds/one/hundred/characters/in/total/length/yes/indeed/file.txt";
+    const tar = createTar([{ name: longName, data: "content", attrs: { mtime } }]);
+
+    const listing = execSync("tar -tf-", { input: tar }).toString().trim();
+    expect(listing).toBe(longName);
   });
 });

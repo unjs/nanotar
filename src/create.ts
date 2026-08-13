@@ -36,6 +36,15 @@ export function createTar(
   // Create data buffer
   let tarDataSize = 0;
   for (let i = 0; i < files.length; i++) {
+    // GNU long filename header (L typeflag) when name exceeds 100 bytes
+    const nameLen = new TextEncoder().encode(_files[i]!.name).length;
+    if (nameLen > 100) {
+      const longDataSize = nameLen + 1; // +1 for null terminator
+      tarDataSize += 512 + 512 * Math.trunc(longDataSize / 512);
+      if (longDataSize % 512) {
+        tarDataSize += 512;
+      }
+    }
     const size = _files[i]!.data?.length ?? 0;
     tarDataSize += 512 + 512 * Math.trunc(size / 512);
     if (size % 512) {
@@ -52,6 +61,41 @@ export function createTar(
 
   for (const file of _files) {
     const isDir = !file.data;
+
+    // -- GNU long filename header (L typeflag) --
+    const nameBytes = new TextEncoder().encode(file.name);
+    if (nameBytes.length > 100) {
+      const longDataSize = nameBytes.length + 1; // +1 for null terminator
+      const longDataBlocks = 512 * Math.trunc(longDataSize / 512) + (longDataSize % 512 ? 512 : 0);
+
+      // Long name header fields
+      _writeString(buffer, "././@LongName", offset, 100);
+      _writeString(buffer, _leftPad("0", 7), offset + 100, 8); // mode
+      _writeString(buffer, _leftPad("0", 7), offset + 108, 8); // uid
+      _writeString(buffer, _leftPad("0", 7), offset + 116, 8); // gid
+      _writeString(buffer, _leftPad(longDataSize.toString(8), 11), offset + 124, 12); // size
+      _writeString(buffer, _leftPad("0", 11), offset + 136, 12); // mtime
+      _writeString(buffer, "L", offset + 156, 1); // typeflag
+      _writeString(buffer, "ustar", offset + 257, 6);
+      _writeString(buffer, "00", offset + 263, 2);
+
+      // Checksum
+      _writeString(buffer, "        ", offset + 148, 8);
+      const longHeader = new Uint8Array(buffer, offset, 512);
+      let longChksum = 0;
+      for (let i = 0; i < 512; i++) {
+        longChksum += longHeader[i]!;
+      }
+      _writeString(buffer, longChksum.toString(8), offset + 148, 8);
+
+      // Long name data (name + null, padded to 512)
+      const longDataView = new Uint8Array(buffer, offset + 512, longDataBlocks);
+      longDataView.set(nameBytes, 0);
+      longDataView[nameBytes.length] = 0; // null terminator
+      // rest is already zero-filled
+
+      offset += 512 + longDataBlocks;
+    }
 
     // -- Header --
     // File name (offset: 0 - length: 100)
