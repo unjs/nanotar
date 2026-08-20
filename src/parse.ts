@@ -42,6 +42,17 @@ export function parseTar<
       break;
     }
 
+    // Ustar prefix (offset: 345 - length: 155)
+    // Paths longer than 100 bytes are split into `prefix` + "/" + `name` by ustar writers.
+    // Only trust the field when the ustar magic (offset: 257 - length: 6) is present, since
+    // older formats leave that area as padding.
+    if (_readString(buffer, offset + 257, 6).trim() === "ustar") {
+      const prefix = _readString(buffer, offset + 345, 155);
+      if (prefix.length > 0) {
+        name = `${prefix}/${name}`;
+      }
+    }
+
     // Long file-name handling
     if (nextExtendedHeader) {
       const longName = nextExtendedHeader.path || nextExtendedHeader.linkpath;
