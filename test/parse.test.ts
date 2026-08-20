@@ -11,6 +11,63 @@ import { readFile } from "node:fs/promises";
 
 const mtime = 1_700_000_000_000;
 
+/** Writes an ASCII string into `buffer` at `offset`, NUL padded up to `size`. */
+function _writeString(buffer: Uint8Array, str: string, offset: number, size: number) {
+  const bytes = new TextEncoder().encode(str);
+  buffer.set(bytes.subarray(0, size), offset);
+}
+
+/**
+ * Builds a raw ustar archive so header fields can be exercised directly.
+ *
+ * `createTar` always writes the path into the 100-byte `name` field, so it cannot
+ * produce the `prefix` split that ustar writers (GNU tar, npm pack, ...) emit for
+ * long paths.
+ */
+function ustarTar(
+  entries: { name: string; prefix?: string; type?: string; magic?: string; data?: string }[],
+) {
+  const blocks: Uint8Array[] = [];
+  for (const entry of entries) {
+    const data = new TextEncoder().encode(entry.data ?? "");
+    const header = new Uint8Array(512);
+    _writeString(header, entry.name, 0, 100);
+    _writeString(header, "0000644\0", 100, 8); // mode
+    _writeString(header, "0000000\0", 108, 8); // uid
+    _writeString(header, "0000000\0", 116, 8); // gid
+    _writeString(header, `${data.length.toString(8).padStart(11, "0")}\0`, 124, 12); // size
+    _writeString(header, `${(mtime / 1000).toString(8).padStart(11, "0")}\0`, 136, 12);
+    header.fill(32, 148, 156); // checksum placeholder (spaces)
+    _writeString(header, entry.type ?? "0", 156, 1);
+    _writeString(header, entry.magic ?? "ustar\0", 257, 6);
+    _writeString(header, "00", 263, 2); // version
+    _writeString(header, entry.prefix ?? "", 345, 155);
+
+    // Checksum is the sum of all header bytes with the field itself read as spaces
+    const checksum = header.reduce((sum, byte) => sum + byte, 0);
+    _writeString(header, `${checksum.toString(8).padStart(6, "0")}\0 `, 148, 8);
+
+    blocks.push(header, data, new Uint8Array((512 - (data.length % 512)) % 512));
+  }
+  blocks.push(new Uint8Array(1024)); // end-of-archive marker
+
+  const size = blocks.reduce((total, block) => total + block.length, 0);
+  const tar = new Uint8Array(size);
+  let offset = 0;
+  for (const block of blocks) {
+    tar.set(block, offset);
+    offset += block.length;
+  }
+  return tar;
+}
+
+/** Encodes a single `<len> <key>=<value>\n` pax extended header record. */
+function paxRecord(key: string, value: string) {
+  const body = ` ${key}=${value}\n`;
+  const len = body.length + String(body.length).length;
+  return `${len}${body}`;
+}
+
 const fixture: TarFileItem<any>[] = [
   { name: "hello.txt", data: "Hello World!", attrs: { mtime } },
   { name: "test", attrs: { mtime, uid: 1001, gid: 1001 } },
@@ -70,6 +127,37 @@ describe("path traversal prevention", () => {
     const tar = createTar([{ name: "./../../../etc/passwd", data: "malicious" }]);
     const files = parseTar(tar);
     expect(files[0]!.name).toBe("./etc/passwd");
+  });
+});
+
+describe("ustar prefix field", () => {
+  // Paths longer than 100 bytes are split by ustar writers into
+  // `prefix` (offset 345, 155 bytes) + "/" + `name` (offset 0, 100 bytes).
+  const longDir = "package/node_modules/@scope/some-rather-long-package-name/dist/esm/internal";
+  const longName = "a-file-with-a-name-that-pushes-the-path-past-one-hundred-bytes.mjs";
+
+  it("joins prefix and name back into the full path", () => {
+    const tar = ustarTar([{ prefix: longDir, name: longName }]);
+    expect(parseTar(tar)[0]!.name).toBe(`${longDir}/${longName}`);
+  });
+
+  it("ignores the prefix area when the ustar magic is absent", () => {
+    // v7 headers leave offset 345 as padding, so any bytes there are not a path prefix.
+    const tar = ustarTar([{ prefix: longDir, name: longName, magic: "" }]);
+    expect(parseTar(tar)[0]!.name).toBe(longName);
+  });
+
+  it("sanitizes traversal sequences coming from the prefix", () => {
+    const tar = ustarTar([{ prefix: "../../etc", name: "passwd" }]);
+    expect(parseTar(tar)[0]!.name).toBe("etc/passwd");
+  });
+
+  it("prefers an extended header path over the prefix", () => {
+    const tar = ustarTar([
+      { name: "././@PaxHeader", type: "x", data: paxRecord("path", "pax/path.txt") },
+      { prefix: longDir, name: longName },
+    ]);
+    expect(parseTar(tar)[0]!.name).toBe("pax/path.txt");
   });
 });
 
