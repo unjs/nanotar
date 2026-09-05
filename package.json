@@ -26,15 +26,15 @@
     "test:types": "tsgo --noEmit --skipLibCheck"
   },
   "devDependencies": {
-    "@types/node": "^25.4.0",
-    "@typescript/native-preview": "7.0.0-dev.20260310.1",
-    "@vitest/coverage-v8": "^4.0.18",
+    "@types/node": "^25.9.5",
+    "@typescript/native-preview": "7.0.0-dev.20260707.2",
+    "@vitest/coverage-v8": "^4.1.11",
     "changelogen": "^0.6.2",
-    "obuild": "^0.4.32",
-    "oxfmt": "^0.37.0",
-    "oxlint": "^1.52.0",
+    "obuild": "^0.4.39",
+    "oxfmt": "^0.66.0",
+    "oxlint": "^1.81.0",
     "typescript": "^5.9.3",
     "vitest": "^4.0.18"
   },
-  "packageManager": "pnpm@10.32.0"
+  "packageManager": "pnpm@10.34.5"
 }
