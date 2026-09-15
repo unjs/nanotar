@@ -73,6 +73,73 @@ describe("path traversal prevention", () => {
   });
 });
 
+describe("pax extended headers", () => {
+  /**
+   * Build a PAX record: `"%d %s=%s\n"` where the leading decimal is the total
+   * byte length of the record, including the digits, the space and the newline.
+   */
+  function paxRecord(key: string, value: string): string {
+    const rest = ` ${key}=${value}\n`;
+    let length = rest.length;
+    // The length prefix is part of the length it describes.
+    while (String(length).length + rest.length !== length) {
+      length = String(length).length + rest.length;
+    }
+    return String(length) + rest;
+  }
+
+  /**
+   * Create a tar with a PAX extended header entry (typeflag `x`) followed by
+   * the file it applies to. `createTar` has no typeflag option, so the type
+   * byte of the first header is patched afterwards.
+   */
+  function createPaxTar(records: string, file: TarFileItem<string>) {
+    const tar = createTar([{ name: "PaxHeaders/0", data: records, attrs: { mtime } }, file]);
+    tar[156] = "x".charCodeAt(0); // typeflag of the first header
+    return tar;
+  }
+
+  it("keeps spaces in a long file name", () => {
+    const name = `${"a".repeat(120)} with spaces.txt`;
+    const tar = createPaxTar(paxRecord("path", name), {
+      name: name.slice(0, 100),
+      data: "x",
+      attrs: { mtime },
+    });
+    expect(parseTar(tar)[0]!.name).toBe(name);
+  });
+
+  it("keeps `=` in a long file name", () => {
+    const name = `${"a".repeat(120)}=equals.txt`;
+    const tar = createPaxTar(paxRecord("path", name), {
+      name: name.slice(0, 100),
+      data: "x",
+      attrs: { mtime },
+    });
+    expect(parseTar(tar)[0]!.name).toBe(name);
+  });
+
+  it("parses consecutive records", () => {
+    const name = "b".repeat(120);
+    const records = paxRecord("comment", "a b=c") + paxRecord("path", name);
+    const tar = createPaxTar(records, { name: name.slice(0, 100), data: "x", attrs: { mtime } });
+    const file = parseTar(tar)[0]!;
+    expect(file.name).toBe(name);
+    expect((file.attrs as Record<string, unknown>).comment).toBe("a b=c");
+  });
+
+  it("ignores a truncated record instead of emitting a bogus key", () => {
+    const tar = createPaxTar(`${paxRecord("path", "ok.txt")}999 comment=truncated\n`, {
+      name: "fallback.txt",
+      data: "x",
+      attrs: { mtime },
+    });
+    const file = parseTar(tar)[0]!;
+    expect(file.name).toBe("ok.txt");
+    expect((file.attrs as Record<string, unknown>).comment).toBeUndefined();
+  });
+});
+
 describe("parse", () => {
   it("parseTarGzip", async () => {
     const data = await createTarGzip(fixture);

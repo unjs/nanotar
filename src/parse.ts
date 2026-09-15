@@ -251,15 +251,52 @@ function _readNumber(buffer: ArrayBufferLike, offset: number, size: number) {
   return Number.parseInt(str, 8);
 }
 
+const SPACE = 0x20; // " "
+const EQUALS = 0x3d; // "="
+const NEWLINE = 0x0a; // "\n"
+
 function _parseExtendedHeaders(data: Uint8Array<ArrayBuffer>) {
-  // TODO: Improve performance by using byte offset reads
-  const dataStr = new TextDecoder().decode(data);
   const headers: Record<string, string | undefined> = {};
-  for (const line of dataStr.split("\n")) {
-    const s = line.split(" ")[1]?.split("=");
-    if (s) {
-      headers[s[0]!] = s[1];
+  const td = new TextDecoder();
+
+  // Each record is `"%d %s=%s\n"` where the leading decimal is the byte length
+  // of the whole record, including the digits, the space and the newline.
+  // The length prefix is what delimits records: keys may contain `=` and values
+  // may contain spaces, `=` and even newlines.
+  let offset = 0;
+  while (offset < data.length) {
+    const spaceIndex = data.indexOf(SPACE, offset);
+    if (spaceIndex === -1) {
+      break;
     }
+
+    const digits = td.decode(data.subarray(offset, spaceIndex));
+    const length = Number.parseInt(digits, 10);
+    if (
+      !Number.isFinite(length) ||
+      length <= spaceIndex - offset ||
+      offset + length > data.length
+    ) {
+      break;
+    }
+
+    let recordEnd = offset + length;
+
+    const eqIndex = data.indexOf(EQUALS, spaceIndex + 1);
+    if (eqIndex === -1 || eqIndex >= recordEnd) {
+      break;
+    }
+
+    // The record ends with a newline that is not part of the value.
+    if (data[recordEnd - 1] === NEWLINE) {
+      recordEnd--;
+    }
+
+    const key = td.decode(data.subarray(spaceIndex + 1, eqIndex));
+    headers[key] = td.decode(data.subarray(eqIndex + 1, recordEnd));
+
+    offset += length;
   }
+
   return headers;
 }
