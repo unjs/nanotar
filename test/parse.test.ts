@@ -80,10 +80,12 @@ describe("pax extended headers", () => {
    */
   function paxRecord(key: string, value: string): string {
     const rest = ` ${key}=${value}\n`;
-    let length = rest.length;
+    // The prefix counts UTF-8 bytes, not UTF-16 code units.
+    const restByteLength = new TextEncoder().encode(rest).length;
+    let length = restByteLength;
     // The length prefix is part of the length it describes.
-    while (String(length).length + rest.length !== length) {
-      length = String(length).length + rest.length;
+    while (String(length).length + restByteLength !== length) {
+      length = String(length).length + restByteLength;
     }
     return String(length) + rest;
   }
@@ -126,6 +128,25 @@ describe("pax extended headers", () => {
     const file = parseTar(tar)[0]!;
     expect(file.name).toBe(name);
     expect((file.attrs as Record<string, unknown>).comment).toBe("a b=c");
+  });
+
+  it("keeps a newline inside a value", () => {
+    const records = paxRecord("comment", "a\nb") + paxRecord("path", "ok.txt");
+    const tar = createPaxTar(records, { name: "fallback.txt", data: "x", attrs: { mtime } });
+    const file = parseTar(tar)[0]!;
+    expect(file.name).toBe("ok.txt");
+    expect((file.attrs as Record<string, unknown>).comment).toBe("a\nb");
+  });
+
+  it("handles multi-byte characters in a long file name", () => {
+    // 120 characters, 2-3 bytes each, so the byte length differs from the
+    // number of UTF-16 code units.
+    const name = `${"é".repeat(60)}${"あ".repeat(60)}.txt`;
+    const records = paxRecord("comment", "ü=ö ß") + paxRecord("path", name);
+    const tar = createPaxTar(records, { name: "fallback.txt", data: "x", attrs: { mtime } });
+    const file = parseTar(tar)[0]!;
+    expect(file.name).toBe(name);
+    expect((file.attrs as Record<string, unknown>).comment).toBe("ü=ö ß");
   });
 
   it("ignores a truncated record instead of emitting a bogus key", () => {
