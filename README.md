@@ -151,13 +151,27 @@ const fileMetas = parseTar(data, {
 
 ### Decompression
 
-If input is compressed, you can use `parseTarGzip` utility instead to parse it (it used [`DecompressionStream`](https://developer.mozilla.org/en-US/docs/Web/API/DecompressionStream) internally and return a `Promise<Uint8Array>` value)
+If input is compressed, use `parseTarGzip` to decompress and parse it. It uses [`DecompressionStream`](https://developer.mozilla.org/en-US/docs/Web/API/DecompressionStream) internally and returns a `Promise<ParsedTarFileItem[]>`.
 
 ```js
 import { parseTarGzip } from "nanotar";
 
-parseTarGzip(data); // Promise<Uint8Array>
+parseTarGzip(data); // Promise<ParsedTarFileItem[]>
 ```
+
+Use `maxOutputLength` to limit the number of decompressed bytes:
+
+```js
+const files = await parseTarGzip(data, {
+  maxOutputLength: 10 * 1024 * 1024, // 10 MiB
+});
+```
+
+The limit counts all decompressed bytes, including tar headers and padding, even when using `filter` or `metaOnly`. Output exactly at the limit is allowed. If the output exceeds the limit, decompression is canceled and the promise rejects with a `RangeError` before tar parsing starts.
+
+`maxOutputLength` must be a non-negative safe integer. Invalid values reject with a `RangeError`. A limit of `0` allows only empty decompressed output. No limit is applied when the option is omitted.
+
+The limit controls decompressed bytes, not total process memory.
 
 ## Development
 

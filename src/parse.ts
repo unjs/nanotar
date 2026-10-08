@@ -13,6 +13,19 @@ export interface ParseTarOptions {
   metaOnly?: boolean;
 }
 
+export interface ParseTarGzipOptions extends ParseTarOptions {
+  /**
+   * Compression format. Defaults to `"gzip"`.
+   */
+  compression?: CompressionFormat;
+
+  /**
+   * Maximum number of decompressed bytes, including tar headers and padding.
+   * Must be a non-negative safe integer. No limit is applied when omitted.
+   */
+  maxOutputLength?: number;
+}
+
 /**
  * Parses a TAR file from a binary buffer and returns an array of {@link TarFileItem} objects.
  *
@@ -174,18 +187,44 @@ export function parseTar<
  * @param {ArrayBuffer | Uint8Array} data - The binary data of the gzipped TAR file.
  * @param {object} opts - Decompression options.
  * @param {CompressionFormat} [opts.compression="gzip"] - Specifies the compression format to use, defaults to `"gzip"`.
+ * @param {number} [opts.maxOutputLength] - Maximum number of decompressed bytes.
  * @returns {Promise<TarFileItem[]>} A promise that resolves to an array of file items as described by {@link TarFileItem}.
  */
 export async function parseTarGzip(
   data: ArrayBuffer | Uint8Array<ArrayBuffer>,
-  opts: ParseTarOptions & { compression?: CompressionFormat } = {},
+  opts: ParseTarGzipOptions = {},
 ): Promise<ParsedTarFileItem[]> {
-  const stream = new ReadableStream({
+  const { maxOutputLength } = opts;
+  if (
+    maxOutputLength !== undefined &&
+    (!Number.isSafeInteger(maxOutputLength) || maxOutputLength < 0)
+  ) {
+    throw new RangeError("maxOutputLength must be a non-negative safe integer");
+  }
+
+  let stream = new ReadableStream({
     start(controller) {
       controller.enqueue(new Uint8Array(data));
       controller.close();
     },
   }).pipeThrough(new DecompressionStream(opts.compression ?? "gzip"));
+
+  if (maxOutputLength !== undefined) {
+    let outputLength = 0;
+    stream = stream.pipeThrough(
+      new TransformStream<Uint8Array<ArrayBuffer>, Uint8Array<ArrayBuffer>>({
+        transform(chunk, controller) {
+          outputLength += chunk.byteLength;
+          if (outputLength > maxOutputLength) {
+            throw new RangeError(
+              `Decompressed data exceeds maxOutputLength (${maxOutputLength} bytes)`,
+            );
+          }
+          controller.enqueue(chunk);
+        },
+      }),
+    );
+  }
 
   const decompressedData = await new Response(stream).arrayBuffer();
 
