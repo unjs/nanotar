@@ -1,9 +1,8 @@
-import { gzipSync } from "node:zlib";
+import { deflateSync, gzipSync } from "node:zlib";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { createTar, createTarGzip, parseTarGzip } from "../src/index.ts";
+import { createTar, parseTarGzip } from "../src/index.ts";
 
-const fixture = [{ name: "hello.txt", data: "Hello World!", attrs: { mtime: 0 } }];
-const tar = createTar(fixture);
+const tar = createTar([{ name: "hello.txt", data: "Hello World!", attrs: { mtime: 0 } }]);
 const gzip = gzipSync(tar);
 
 afterEach(() => {
@@ -27,9 +26,8 @@ describe("parseTarGzip maxOutputLength", () => {
   it.each([false, true])(
     "rejects oversized output before filtering (metaOnly: %s)",
     async (metaOnly) => {
-      const data = await createTarGzip([
-        { name: "large.bin", data: new Uint8Array(2 * 1024 * 1024) },
-      ]);
+      const largeTar = createTar([{ name: "large.bin", data: new Uint8Array(2 * 1024 * 1024) }]);
+      const data = gzipSync(largeTar);
       const filter = vi.fn(() => false);
       expect(data.byteLength).toBeLessThan(10_000);
 
@@ -54,7 +52,7 @@ describe("parseTarGzip maxOutputLength", () => {
   });
 
   it("supports the compression option with a limit", async () => {
-    const data = await createTarGzip(fixture, { compression: "deflate" });
+    const data = deflateSync(tar);
     const files = await parseTarGzip(data, {
       compression: "deflate",
       maxOutputLength: tar.byteLength,
@@ -93,12 +91,13 @@ describe("parseTarGzip maxOutputLength", () => {
   it("cancels the decompressed stream before consuming all chunks", async () => {
     const cancel = vi.fn();
     const totalChunks = 16;
+    const chunkBytes = 16;
     let producedChunks = 0;
     const readable = new ReadableStream<Uint8Array>(
       {
         pull(controller) {
           producedChunks++;
-          controller.enqueue(new Uint8Array(16));
+          controller.enqueue(new Uint8Array(chunkBytes));
           if (producedChunks === totalChunks) {
             controller.close();
           }
@@ -115,7 +114,7 @@ describe("parseTarGzip maxOutputLength", () => {
       },
     );
 
-    await expect(parseTarGzip(gzip, { maxOutputLength: 16 })).rejects.toThrow(RangeError);
+    await expect(parseTarGzip(gzip, { maxOutputLength: chunkBytes })).rejects.toThrow(RangeError);
     await vi.waitFor(() => expect(cancel).toHaveBeenCalledWith(expect.any(RangeError)));
     expect(producedChunks).toBeLessThan(totalChunks);
   });

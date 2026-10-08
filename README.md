@@ -167,9 +167,11 @@ const files = await parseTarGzip(data, {
 });
 ```
 
-The limit must be a non-negative safe integer. It includes tar headers and padding, even when using `filter` or `metaOnly`. Output exactly at the limit is allowed. If the output exceeds the limit, decompression is canceled and the promise rejects with a `RangeError` before tar parsing starts. Invalid limits also reject with a `RangeError`.
+The limit counts all decompressed bytes, including tar headers and padding, even when using `filter` or `metaOnly`. Output exactly at the limit is allowed. If the output exceeds the limit, decompression is canceled and the promise rejects with a `RangeError` before tar parsing starts.
 
-No limit is applied when `maxOutputLength` is omitted. A limit of `0` allows only empty decompressed output. The limit controls decompressed bytes, not total process memory.
+`maxOutputLength` must be a non-negative safe integer. Invalid values reject with a `RangeError`. A limit of `0` allows only empty decompressed output. No limit is applied when the option is omitted.
+
+The limit controls decompressed bytes, not total process memory.
 
 ## Development
 
