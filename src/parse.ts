@@ -43,11 +43,8 @@ export function parseTar<
     }
 
     // Long file-name handling
-    if (nextExtendedHeader) {
-      const longName = nextExtendedHeader.path || nextExtendedHeader.linkpath;
-      if (longName) {
-        name = longName;
-      }
+    if (nextExtendedHeader?.path) {
+      name = nextExtendedHeader.path;
     }
 
     // File mode (offset: 100 - length: 8)
@@ -93,9 +90,20 @@ export function parseTar<
       }
       // GNU tar long file names
       case "gnuLongFileName" /* L */:
-      case "gnuOldLongFileName" /* N */:
+      case "gnuOldLongFileName" /* N */: {
+        nextExtendedHeader = {
+          ...nextExtendedHeader,
+          path: _readString(buffer, offset + 512, size),
+        };
+        offset += seek;
+        continue;
+      }
+      // GNU tar long link names
       case "gnuLongLinkName" /* K */: {
-        nextExtendedHeader = { path: _readString(buffer, offset + 512, size) };
+        nextExtendedHeader = {
+          ...nextExtendedHeader,
+          linkpath: _readString(buffer, offset + 512, size),
+        };
         offset += seek;
         continue;
       }

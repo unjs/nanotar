@@ -172,3 +172,63 @@ describe("parse", () => {
     }
   });
 });
+
+describe("long link names", () => {
+  // Link target that does not fit the 100 bytes link name field
+  const target = `dir/${"a".repeat(60)}/${"b".repeat(60)}/target.txt`;
+
+  // Writes [name, type, content] entries with the header fields parseTar reads
+  function rawTar(entries: [name: string, type: string, content: string][]) {
+    const encoder = new TextEncoder();
+    const blocks: Uint8Array[] = [];
+    for (const [name, type, content] of entries) {
+      const header = new Uint8Array(512);
+      header.set(encoder.encode(name), 0);
+      header.set(encoder.encode(content.length.toString(8).padStart(11, "0")), 124);
+      header.set(encoder.encode(type), 156);
+      const data = new Uint8Array(Math.ceil(content.length / 512) * 512);
+      data.set(encoder.encode(content));
+      blocks.push(header, data);
+    }
+    blocks.push(new Uint8Array(1024));
+    const tar = new Uint8Array(blocks.reduce((size, block) => size + block.length, 0));
+    let offset = 0;
+    for (const block of blocks) {
+      tar.set(block, offset);
+      offset += block.length;
+    }
+    return tar;
+  }
+
+  it("GNU long link name (K)", () => {
+    const tar = rawTar([
+      ["././@LongLink", "K", target],
+      ["link", "2", ""],
+    ]);
+    expect(parseTar(tar, { metaOnly: true })).toMatchObject([
+      { name: "link", type: "symbolicLink", attrs: { linkpath: target } },
+    ]);
+  });
+
+  it("GNU long link name (K) and long file name (L)", () => {
+    const name = `${"c".repeat(60)}/${"d".repeat(60)}/link`;
+    const tar = rawTar([
+      ["././@LongLink", "K", target],
+      ["././@LongLink", "L", name],
+      ["link", "1", ""],
+    ]);
+    expect(parseTar(tar, { metaOnly: true })).toMatchObject([
+      { name, type: "hardLink", attrs: { linkpath: target } },
+    ]);
+  });
+
+  it("pax linkpath", () => {
+    const tar = rawTar([
+      ["PaxHeaders/link", "x", `150 linkpath=${target}\n`],
+      ["link", "2", ""],
+    ]);
+    expect(parseTar(tar, { metaOnly: true })).toMatchObject([
+      { name: "link", type: "symbolicLink", attrs: { linkpath: target } },
+    ]);
+  });
+});
